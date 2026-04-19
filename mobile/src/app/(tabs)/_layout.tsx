@@ -1,8 +1,8 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { HapticTab } from '@/src/components/haptic-tab';
+import { IconSymbol } from '@/src/components/ui/icon-symbol';
 import { Colors } from '@/src/constants/theme';
 import { useColorScheme } from '@/src/hooks/use-color-scheme';
 
