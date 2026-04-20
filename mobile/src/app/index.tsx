@@ -4,12 +4,20 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useThemeColor } from '@hooks/use-theme-color'
 import { router } from 'expo-router'
 import { Colors } from '../styles/theme'
+import { useEffect } from 'react'
 
 export default function App() {
+
+  useEffect(() => {
+    if (false)
+      router.push('/explore')
+  }, [])
   const backgroundColor = useThemeColor({}, 'background')
   return (
     <ThemedView style={ styles.container }>
-      <ImageBackground source={require('../assets/images/background.png')} style={[styles.backgroundImage, { backgroundColor }]}>
+      <ImageBackground 
+        source={require('../assets/images/background_1.png')}
+        style={[styles.backgroundImage, { backgroundColor }]}>
         <LinearGradient colors={[ 'transparent', Colors.branding._800 ]} locations={[0, 0.8]} style={ styles.gradient } />
       </ImageBackground>
 
@@ -34,7 +42,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    bottom: '10%',
+    bottom: '20%',
+    overflow: 'hidden',
   },
   gradient: {
     flex: 1,
