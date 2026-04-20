@@ -12,6 +12,7 @@
       "@organisms/*": ["./src/components/organisms/*"],
       "@app/*": ["./src/app/*"],
       "@api/*": ["./src/api/*"],
+      "@hooks/*": ["./src/hooks/*"],
     }
   },
   "include": [
