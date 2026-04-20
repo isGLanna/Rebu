@@ -5,15 +5,22 @@ import { router } from 'expo-router'
 const header = 'Content-Type: application/json'
 const baseUrl = 'http://localhost:3000/auth'
 
-const authorize = {
+export const authorize = {
   async signInPassenger (user: Omit<User, 'name' | 'type'>) {
     try {
-      const token = await fetch(`${baseUrl}/signin/passenger`, {
+      const response = await fetch(`${baseUrl}/signin/passenger`, {
         method: 'POST',
         headers: {header},
         body: JSON.stringify(user)
       })
 
+      const data = await response.json()
+
+      if (!response.ok || !data.token) {
+        return
+      }
+
+      await AsyncStorage.setItem('authToken', data.token)
     } catch (err) {
       console.error('Error signing in', err)
     }
@@ -21,51 +28,68 @@ const authorize = {
 
   async signInDriver (user: Omit<User, 'name' | 'type'>) {
     try {
-      const token = await fetch(`${baseUrl}/signin/driver`, {
+      const response = await fetch(`${baseUrl}/signin/driver`, {
         method: 'POST',
         headers: {header},
         body: JSON.stringify(user)
       })
 
+      const data = await response.json()
+
+      if (!response.ok || !data.token) {
+        return
+      }
+
+      await AsyncStorage.setItem('authToken', data.token)
     } catch (err) {
-      console.error('Error signing in', err)
+      return
     }
   },
 
   async registerPassenger (user: User) {
     try {
-      await fetch(`${baseUrl}/register/passenger`, {
+      const response = await fetch(`${baseUrl}/register/passenger`, {
         method: 'POST',
         headers: {header},
         body: JSON.stringify(user)
       })
-      
+
+      if (!response.ok) {
+        return
+      }
+
+      // Enviar toast de sucesso
     } catch (err) {
-      console.error('Error registering passenger', err)
+      return // Enviar toast de falha
     }
   },
 
   async registerDriver (user: User) {
     try {
-      await fetch(`${baseUrl}/register/driver`, {
+      const response = await fetch(`${baseUrl}/register/driver`, {
         method: 'POST',
         headers: {header},
         body: JSON.stringify(user)
       })
+
+      if (!response.ok) {
+        return
+      }
       
+      // Enviar toast de sucesso
     } catch (err) {
-      console.error('Error registering driver', err)
+      return // Enviar toast de falha
     }
   },
 
   async signOut () {
     try {
       await AsyncStorage.removeItem('authToken')
-      
+
       router.dismissAll()
       router.replace('/')
     } catch (err) {
-      console.error('Error signing out', err)
+      return null
     }
   },
 
@@ -73,7 +97,7 @@ const authorize = {
     try {
       await AsyncStorage.setItem('authToken', value)
     } catch (err) {
-      console.error('Error storing data', err)
+      return null
     }
   },
 
@@ -82,7 +106,28 @@ const authorize = {
       const token = await AsyncStorage.getItem('authToken')
       return token
     } catch (err) {
-      console.error('Error retrieving data', err)
+      return null
+    }
+  },
+
+  async isAuthtenticated(): Promise<boolean> {
+    try {
+      const response = await fetch(`${baseUrl}/validate`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${await this.getToken()}` }
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.token) {
+        await AsyncStorage.removeItem('authToken')
+        return false
+      }
+      
+      await AsyncStorage.setItem('authToken', data.token)
+      return true
+    } catch (err) {
+      return false
     }
   }
 }
