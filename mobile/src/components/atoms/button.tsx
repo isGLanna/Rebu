@@ -22,7 +22,7 @@ export function Button({ onPress, style, type='subtitle', children }: ButtonProp
 const buttonStyles = StyleSheet.create({
   button: {
     paddingHorizontal: 16,
-    paddingVertical: 4,
+    paddingVertical: 8,
     borderRadius: 10,
   }
 })

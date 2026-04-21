@@ -1,5 +1,5 @@
 import { Animated, View, StyleSheet } from 'react-native'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Input, ThemedText } from '../atoms'
 import { useThemeColor } from '@/src/hooks/use-theme-color'
 

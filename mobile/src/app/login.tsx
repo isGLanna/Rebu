@@ -1,23 +1,62 @@
 import { View, StyleSheet } from 'react-native'
 import { useState } from 'react'
-import { Button, ThemedText, ThemedView, Input } from '@comp/index'
+import { Button, ThemedText, ThemedView } from '@comp/index'
+import { FloatingLabel } from '@molecules/animated-floating'
+import { Colors } from '../styles/theme'
 import { router } from 'expo-router'
+import { useThemeColor } from '../hooks/use-theme-color'
 
 export default function Login() {
-  const [user, setUser] = useState<{email: string, password: string, type: string}>({email: '', password: '', type: 'passenger'})
+  const formColor = useThemeColor({}, 'container')
+  const [user, setUser] = useState<{ name: string, email: string, password: string, confirmPassword: string, accountType: 'passenger' | 'driver' | null}>({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    accountType: null,
+  })
+
   return (
     <ThemedView style={ styles.container }>
-      
-      <ThemedText>Email</ThemedText>
-      <Input value={user.email} onChangeText={(text) => setUser(prev => ({...prev, email: text}))} />
-      <ThemedText>Senha</ThemedText>
-      <Input value={user.password} onChangeText={(text) => setUser(prev => ({...prev, password: text}))} />
-      <ThemedText>Tipo de Usuário</ThemedText>
-      <View>
-        <Button onPress={() => setUser(prev => ({...prev, type: 'passenger'}))}>Passageiro</Button>
-        <Button onPress={() => setUser(prev => ({...prev, type: 'driver'}))}>Motorista</Button>
+      <View style={[ styles.form, { backgroundColor: formColor } ]}>
+        <ThemedText style={{ marginBottom: 16 }} type='title'>Login</ThemedText>
+
+        <FloatingLabel
+          label='Email'
+          focused={false}
+          value={user.email}
+          onChangeText={(text) => setUser(prev => ({ ...prev, email: text}))}
+        />
+
+        <FloatingLabel
+          label='Senha'
+          focused={false}
+          value={user.password}
+          onChangeText={(text) => setUser(prev => ({ ...prev, password: text}))}
+        />
+
+        <View style={{ width: '100%', gap: 8, marginBottom: 8 }}>
+          <ThemedText style={{ paddingHorizontal: 8 }}>Tipo de conta</ThemedText>
+          <View style={{ flexDirection: 'row', gap: 32, justifyContent: 'center', alignItems: 'center' }}>
+            <Button
+              style={ user.accountType === 'passenger' ? { backgroundColor: Colors.branding._600, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4 } : {}}
+              onPress={() => setUser(prev => ({...prev, accountType: 'passenger'}))}
+              type='normal'>
+                Passageiro
+              </Button>
+            <Button
+              style={ user.accountType === 'driver' ? { backgroundColor: Colors.branding._600, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4  } : {}}
+              onPress={() => setUser(prev => ({...prev, accountType: 'driver'}))}
+              type='normal'>
+                Motorista
+              </Button>
+          </View>
+        </View>
+
+        <Button onPress={() => router.push('/(tabs)/explore')} type='subtitle'>
+          Entrar
+        </Button>
       </View>
-      <Button onPress={() => router.push('/explore')}>Enviar</Button>
     </ThemedView>
   )
 }
@@ -27,5 +66,25 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  form: {
+    width: '100%',
+    gap: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 32,
+    borderRadius: 8,
+    boxShadow: `2px 2px 12px ${Colors.branding._500}60`
+  },
+
+  input: {
+    width: '100%',
+  },
+
+  button: {
+    fontSize: 16,
+    fontWeight: 'medium',
   }
 })
