@@ -47,21 +47,21 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '600',
-    lineHeight: 32,
+    lineHeight: 34,
   },
   subtitle: {
     fontSize: 20,
     fontWeight: '500',
-    lineHeight: 30,
+    lineHeight: 22,
   },
   link: {
-    lineHeight: 30,
+    lineHeight: 20,
     fontSize: 18,
     textDecorationLine: 'underline',
   },
   regular: {
     fontSize: 14,
-    lineHeight: 24,
+    lineHeight: 16,
     fontWeight: '400',
   },
 });

@@ -1,8 +1,10 @@
 import { View, StyleSheet } from 'react-native'
 import { ThemedText, ThemedView, Input, Button } from '@comp/index'
 import { useThemeColor } from '../hooks/use-theme-color'
-import { useState} from 'react'
+import { useEffect, useState} from 'react'
 import { FloatingLabel } from '@molecules/animated-floating'
+import { Colors } from '../styles/theme'
+import { router } from 'expo-router'
 
 export default function Register () {
   const formColor = useThemeColor({}, 'container')
@@ -13,7 +15,6 @@ export default function Register () {
     confirmPassword: '',
     accountType: null,
   })
-
 
   return (
     <ThemedView style={ styles.container }>
@@ -48,15 +49,25 @@ export default function Register () {
           onChangeText={(text) => setUser(prev => ({ ...prev, confirmPassword: text}))}
         />
 
-        <View style={{ width: '100%', gap: 8 }}>
-          <ThemedText style={{ paddingHorizontal: 8 }} >Tipo de conta</ThemedText>
+        <View style={{ width: '100%', gap: 8, marginBottom: 8 }}>
+          <ThemedText style={{ paddingHorizontal: 8 }}>Tipo de conta</ThemedText>
           <View style={{ flexDirection: 'row', gap: 32, justifyContent: 'center', alignItems: 'center' }}>
-            <Button onPress={() => alert('passageiro')} type='normal'>Passageiro</Button>
-            <Button onPress={() => alert('motorista')} type='normal'>Motorista</Button>
+            <Button
+              style={ user.accountType === 'passenger' ? { backgroundColor: Colors.branding._600, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4 } : {}}
+              onPress={() => setUser(prev => ({...prev, accountType: 'passenger'}))}
+              type='normal'>
+                Passageiro
+              </Button>
+            <Button
+              style={ user.accountType === 'driver' ? { backgroundColor: Colors.branding._600, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4  } : {}}
+              onPress={() => setUser(prev => ({...prev, accountType: 'driver'}))}
+              type='normal'>
+                Motorista
+              </Button>
           </View>
         </View>
 
-        <Button onPress={() => alert('enviar')} type='subtitle'>
+        <Button onPress={() => router.push('/')} type='subtitle'>
           Criar conta
         </Button>
       </View>
@@ -73,12 +84,13 @@ const styles = StyleSheet.create({
   },
   form: {
     width: '100%',
+    gap: 24,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 32,
     borderRadius: 8,
-    gap: 24,
+    boxShadow: `2px 2px 12px ${Colors.branding._500}60`,
   },
 
   input: {
