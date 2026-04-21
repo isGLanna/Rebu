@@ -1,33 +1,54 @@
-import { View, Text, StyleSheet } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 import { ThemedText, ThemedView, Input, Button } from '@comp/index'
 import { useThemeColor } from '../hooks/use-theme-color'
-import { useState } from 'react'
+import { useState} from 'react'
+import { FloatingLabel } from '@molecules/animated-floating'
 
 export default function Register () {
   const formColor = useThemeColor({}, 'container')
-  const [selectedField, setSelectedField] = useState<string | null>(null)
+  const [user, setUser] = useState<{ name: string, email: string, password: string, confirmPassword: string, accountType: 'passenger' | 'driver' | null}>({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    accountType: null,
+  })
+
 
   return (
     <ThemedView style={ styles.container }>
       <View style={[ styles.form, { backgroundColor: formColor } ]}>
         <ThemedText style={{ marginBottom: 16 }} type='title'>Cadastro</ThemedText>
-        <View style={ styles.field }>
-          <ThemedText style={[ styles.label, { backgroundColor: formColor }, selectedField === 'name' && styles.onFocus ]}>Nome</ThemedText>
-          <Input onFocus={() => setSelectedField('name')}/>
-        </View>
-        <View style={ styles.field }>
-          <ThemedText style={[ styles.label, { backgroundColor: formColor }, selectedField === 'email' && styles.onFocus ]}>Email</ThemedText>
-          <Input onFocus={() => setSelectedField('email')}/>
-        </View>
-        <View style={ styles.field }>
-          <ThemedText style={[ styles.label, { backgroundColor: formColor }, selectedField === 'password' && styles.onFocus ]}>Senha</ThemedText>
-          <Input onFocus={() => setSelectedField('password')}/>
-        </View>
-        <View style={ styles.field }>
-          <ThemedText style={[ styles.label, { backgroundColor: formColor }, selectedField === 'confirmPassword' && styles.onFocus ]}>Confirmar senha</ThemedText>
-          <Input onFocus={() => setSelectedField('confirmPassword')}/>
-        </View>
-        <View style={[ styles.field, { gap: 8 } ]}>
+
+        <FloatingLabel
+          label='Nome'
+          focused={false}
+          value={user.name}
+          onChangeText={(text) => setUser(prev => ({ ...prev, name: text}))}
+        />
+
+        <FloatingLabel
+          label='Email'
+          focused={false}
+          value={user.email}
+          onChangeText={(text) => setUser(prev => ({ ...prev, email: text}))}
+        />
+
+        <FloatingLabel
+          label='Senha'
+          focused={false}
+          value={user.password}
+          onChangeText={(text) => setUser(prev => ({ ...prev, password: text}))}
+        />
+
+        <FloatingLabel
+          label='Confirmar senha'
+          focused={false}
+          value={user.confirmPassword}
+          onChangeText={(text) => setUser(prev => ({ ...prev, confirmPassword: text}))}
+        />
+
+        <View style={{ width: '100%', gap: 8 }}>
           <ThemedText style={{ paddingHorizontal: 8 }} >Tipo de conta</ThemedText>
           <View style={{ flexDirection: 'row', gap: 32, justifyContent: 'center', alignItems: 'center' }}>
             <Button onPress={() => alert('passageiro')} type='normal'>Passageiro</Button>
@@ -58,22 +79,6 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     borderRadius: 8,
     gap: 24,
-  },
-
-  field: {
-    width: '100%',
-  },
-
-  label: {
-    position: 'absolute',
-    paddingHorizontal: 4,
-    justifyContent: 'center',
-    top: 12,
-    left: 12,
-    zIndex: 2,
-  },
-  onFocus:{
-    transform: [{ translateY: -16 - 12 }, { translateX: -4 }],  // font-size - paddingVertical
   },
 
   input: {

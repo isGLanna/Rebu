@@ -38,6 +38,19 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+                "./src/assets/font/Orbitron/Orbitron-Regular.ttf",
+                "./src/assets/font/Orbitron/Orbitron-Medium.ttf",
+                "./src/assets/font/Orbitron/Orbitron-SemiBold.ttf",
+                "./src/assets/font/Orbitron/Orbitron-Bold.ttf",
+                "./src/assets/font/Orbitron/Orbitron-ExtraBold.ttf",
+                "./src/assets/font/Orbitron/Orbitron-Black.ttf"
+          ]
+        }
       ]
     ],
     "experiments": {
