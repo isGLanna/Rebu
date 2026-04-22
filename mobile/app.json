@@ -19,7 +19,8 @@
         "monochromeImage": "./src/assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.isglanna.mobile"
     },
     "web": {
       "output": "static",
@@ -43,12 +44,12 @@
         "expo-font",
         {
           "fonts": [
-                "./src/assets/font/Orbitron/Orbitron-Regular.ttf",
-                "./src/assets/font/Orbitron/Orbitron-Medium.ttf",
-                "./src/assets/font/Orbitron/Orbitron-SemiBold.ttf",
-                "./src/assets/font/Orbitron/Orbitron-Bold.ttf",
-                "./src/assets/font/Orbitron/Orbitron-ExtraBold.ttf",
-                "./src/assets/font/Orbitron/Orbitron-Black.ttf"
+            "./src/assets/font/Orbitron/Orbitron-Regular.ttf",
+            "./src/assets/font/Orbitron/Orbitron-Medium.ttf",
+            "./src/assets/font/Orbitron/Orbitron-SemiBold.ttf",
+            "./src/assets/font/Orbitron/Orbitron-Bold.ttf",
+            "./src/assets/font/Orbitron/Orbitron-ExtraBold.ttf",
+            "./src/assets/font/Orbitron/Orbitron-Black.ttf"
           ]
         }
       ]
