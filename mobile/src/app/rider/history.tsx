@@ -1,9 +1,9 @@
 import { ThemedText, ThemedView } from '@comp/index';
 
-export default function Profile() {
+export default function History() {
   return (
     <ThemedView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <ThemedText>Teste 1</ThemedText>
+      <ThemedText>Meu histórico de corridas</ThemedText>
       <ThemedText>Teste 2</ThemedText>
       <ThemedText>Teste 3</ThemedText>
     </ThemedView>

@@ -1,14 +1,17 @@
 import { ThemedView, ThemedText } from '@comp/index'
-import { StyleSheet } from 'react-native'
+import { StyleSheet, View, TouchableOpacity } from 'react-native'
+import { MapView } from '@organisms/index'
 import { useState, useEffect } from 'react'
 import * as Location from 'expo-location'
 import Map from "@rnmapbox/maps"
+import { useThemeColor } from '@/src/hooks/use-theme-color'
 
 Map.setAccessToken("pk.eyJ1IjoiZ2lvcmRhbm9sYW5uYSIsImEiOiJjbW8wdDV2NTcwYzlwMnhveTVja3htdTRzIn0.hNzDdxjqav0FBkeRIsag0w")
 
 export default function Home() {
   const [ location, setLocation ] = useState<Location.LocationObject | null>(null)
   const [ errorMsg, setErrorMsg ] = useState<string | null>(null)
+  const borderColor = useThemeColor({}, 'border')
 
   useEffect(() => {
     async function getLocation() {
@@ -25,35 +28,15 @@ export default function Home() {
     getLocation()
   }, [])
 
-  if (errorMsg) {
-    return (
-      <ThemedView style={ styles.container }>
-        <ThemedText style={ styles.span }>Não possui permissão de localização</ThemedText>
-      </ThemedView>
-    )
-  }
-
-  if (!location) {
-    return (
-      <ThemedView style={ styles.container }>
-        {/* Adicionar skeleton */}
-        <ThemedText style={ styles.span }>Obtendo localização...</ThemedText>
-      </ThemedView>
-    )
-  }
-
   return (
-    <ThemedView style={{ flex: 1 }}>
-      <Map.MapView style={ styles.map }
-        styleURL={Map.StyleURL.Street}
-      >
-        <Map.Camera
-          zoomLevel={14}
-          centerCoordinate={[location.coords.longitude, location.coords.latitude]}
-          animationMode={'flyTo'}
-          animationDuration={0}
-        />
-      </Map.MapView>
+    <ThemedView style={ styles.container }>
+      <MapView location={location?.coords} errorMsg={errorMsg} />
+
+      <View style={[ styles.cardMaps, { borderColor: borderColor } ]}>
+        <TouchableOpacity style={[ styles.map, { alignItems: 'center', justifyContent: 'center' } ]} >
+          <ThemedText type='subtitle'>Criar destino</ThemedText>
+        </TouchableOpacity>
+      </View>
     </ThemedView>
   )
 }
@@ -61,12 +44,22 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 16,
+    gap: 16,
   },
   span: {
     fontSize: 24,
     fontWeight: 'bold',
   },
   map: {
-    flex: 1,
+    width: '100%',
+    height: 120,
+  },
+  cardMaps: {
+    width: '100%',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#b32a2a',
+    overflow: 'hidden',
   }
 })

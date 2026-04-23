@@ -44,9 +44,11 @@ export default function Home() {
 
   return (
     <ThemedView style={{ flex: 1 }}>
-      <Map.MapView style={ styles.map }
+      <Map.MapView style={ styles.cardMaps }
         styleURL={Map.StyleURL.Street}
-      >
+        scaleBarEnabled={false}
+        logoEnabled={false}
+        >
         <Map.Camera
           zoomLevel={14}
           centerCoordinate={[location.coords.longitude, location.coords.latitude]}
@@ -66,7 +68,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
-  map: {
+  cardMaps: {
     flex: 1,
+    borderRadius: 16,
   }
 })
