@@ -8,7 +8,7 @@ import { useThemeColor } from '../hooks/use-theme-color'
 
 export default function Login() {
   const formColor = useThemeColor({}, 'container')
-  const [user, setUser] = useState<{ name: string, email: string, password: string, confirmPassword: string, accountType: 'passenger' | 'driver' | null}>({
+  const [user, setUser] = useState<{ name: string, email: string, password: string, confirmPassword: string, accountType: 'rider' | 'driver' | null}>({
     name: '',
     email: '',
     password: '',
@@ -39,8 +39,8 @@ export default function Login() {
           <ThemedText style={{ paddingHorizontal: 8 }}>Tipo de conta</ThemedText>
           <View style={{ flexDirection: 'row', gap: 32, justifyContent: 'center', alignItems: 'center' }}>
             <Button
-              style={ user.accountType === 'passenger' ? { backgroundColor: Colors.branding._600, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4 } : {}}
-              onPress={() => setUser(prev => ({...prev, accountType: 'passenger'}))}
+              style={ user.accountType === 'rider' ? { backgroundColor: Colors.branding._600, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4 } : {}}
+              onPress={() => setUser(prev => ({...prev, accountType: 'rider'}))}
               type='normal'>
                 Passageiro
               </Button>
@@ -53,7 +53,18 @@ export default function Login() {
           </View>
         </View>
 
-        <Button onPress={() => router.push('/(tabs)/explore')} type='subtitle'>
+        <Button
+          onPress={() => {
+            if (user.accountType === 'driver') {
+              router.push('/driver')
+              return
+            }
+
+            if (user.accountType === 'rider') {
+              router.push('/rider')
+            }
+          }}
+          type='subtitle'>
           Entrar
         </Button>
       </View>
