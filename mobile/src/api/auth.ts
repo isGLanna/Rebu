@@ -110,7 +110,7 @@ export const authorize = {
     }
   },
 
-  async isAuthtenticated(): Promise<boolean> {
+  async isAuthtenticated(): Promise<string | null> {
     try {
       const response = await fetch(`${baseUrl}/validate`, {
         method: 'GET',
@@ -121,13 +121,14 @@ export const authorize = {
 
       if (!response.ok || !data.token) {
         await AsyncStorage.removeItem('authToken')
-        return false
+        return null
       }
       
       await AsyncStorage.setItem('authToken', data.token)
-      return true
+
+      return data.role
     } catch (err) {
-      return false
+      return null
     }
   }
 }
