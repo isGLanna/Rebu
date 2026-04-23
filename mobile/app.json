@@ -52,6 +52,13 @@
             "./src/assets/font/Orbitron/Orbitron-Black.ttf"
           ]
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permitir Rebu acessar sua localização mesmo quando você não estiver usando o aplicativo.",
+          "locationWhenInUsePermission": "Permitir Rebu acessar sua localização enquanto você estiver usando o aplicativo."
+        }
       ]
     ],
     "experiments": {

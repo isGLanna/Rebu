@@ -10,8 +10,12 @@ import { useEffect } from 'react'
 export default function App() {
   useEffect(() => {
     const verifyAuth = async () => {
-      if (await authorize.isAuthtenticated())
-        router.push('/explore')
+      const role = await authorize.isAuthtenticated()
+      if (role === 'driver') {
+        router.push('/driver')
+      } else {
+        router.push('/rider')
+      }
     }
     verifyAuth()
   }, [])
