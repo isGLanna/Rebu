@@ -1,7 +1,9 @@
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { router } from 'expo-router'
 import { ThemedText } from '@comp/index'
 import Map from '@rnmapbox/maps'
 import { useThemeColor } from '@/src/hooks/use-theme-color'
+import { setParams } from 'expo-router/build/global-state/routing';
 
 interface MapViewProps {
   location?: { latitude: number, longitude: number }
@@ -36,18 +38,20 @@ export function MapView({ location, errorMsg }: MapViewProps) {
   return(
     <View style={[ styles.cardMaps, { borderColor: borderColor } ]}>
       <ThemedText style={{ paddingHorizontal: 16, paddingVertical: 4 }} type="subtitle">Mapa</ThemedText>
-      <TouchableOpacity style={ styles.map } >
+      <TouchableOpacity style={ styles.map } onPress={() => router.push({ pathname: '/rider/navigation-map', params: { lat: location.latitude, lng: location.longitude }})}>
         <Map.MapView style={ styles.map }
           styleURL={Map.StyleURL.Street}
           scaleBarEnabled={false}
+          attributionEnabled={false}
           logoEnabled={false}
           >
           <Map.Camera
-            zoomLevel={14}
+            zoomLevel={15}
             centerCoordinate={[location.longitude, location.latitude]}
             animationMode={'flyTo'}
             animationDuration={0}
           />
+          <Map.UserLocation requestsAlwaysUse={true} visible={true}/>
       </Map.MapView>
       </TouchableOpacity>
     </View>
@@ -63,7 +67,11 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#b32a2a',
     overflow: 'hidden',
+  },
+  selectedMap: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
   }
 })

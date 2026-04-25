@@ -48,6 +48,7 @@ export default function Home() {
         styleURL={Map.StyleURL.Street}
         scaleBarEnabled={false}
         logoEnabled={false}
+        attributionEnabled={false}
         >
         <Map.Camera
           zoomLevel={14}
