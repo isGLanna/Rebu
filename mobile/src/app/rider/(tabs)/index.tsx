@@ -31,7 +31,6 @@ export default function Home() {
   return (
     <ThemedView style={ styles.container }>
       <MapView location={location?.coords} errorMsg={errorMsg} />
-
       <View style={[ styles.cardMaps, { borderColor: borderColor } ]}>
         <TouchableOpacity style={[ styles.map, { alignItems: 'center', justifyContent: 'center' } ]} >
           <ThemedText type='subtitle'>Criar destino</ThemedText>
