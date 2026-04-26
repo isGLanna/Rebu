@@ -5,6 +5,16 @@ export class TripManager {
     return response
   }
 
+  static async acceptRace() {
+    const response = await { status: 'success' }
+    return response
+  }
+
+  static async cancelRace() {
+    const response = await { status: 'success' }
+    return response
+  }
+
 /* TODO: Implementar lógica de rotas no backend e consumir aqui */
   static async fetchDirections(origin: { latitude: number, longitude: number }, waypoints: { latitude: number, longitude: number }[],) {
     const originString = `${origin.longitude},${origin.latitude}`

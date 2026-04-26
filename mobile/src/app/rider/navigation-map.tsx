@@ -6,6 +6,7 @@ import { TripManager } from '@api/trip-manager'
 import { useLocalSearchParams } from 'expo-router'
 import { Colors } from '@/src/styles/theme'
 import { MapMarkers, DriverMarker } from '@organisms/map-navigation/index'
+import type { Driver } from '@comp/../types/rider'
 
 import IconMD from '@expo/vector-icons/MaterialCommunityIcons'
 
@@ -30,11 +31,10 @@ export default function MapView() {
   const [ markers, setMarkers ] = useState<MapMarker[]>([])
   const [ routeData, setRouteData ] = useState<RouteInfo | null>(null)
   const [ isActiveRace, setIsActiveRace ] = useState(false)
-  const [ driver, setDriver ] = useState<{ name: string, rating: number, location: { latitude: number, longitude: number } } | null>(null)
+  const [ driver, setDriver ] = useState<Driver | null>(null)
 
   function newMarker(e: { geometry: { coordinates: number[] } }) {
     if (markers.length >= 3) return alert('Limite de três paradas atingido')
-    if (isActiveRace) return alert('Não é possível adicionar paradas durante uma corrida')
 
     const newMarkerData: MapMarker = {
       key: `marker-${markers.length}`,
@@ -49,8 +49,7 @@ export default function MapView() {
 
   // Bloqueia e solicita nova corrida e indica posição do motorista
   const handleRequestRace = async () => {
-    if (isActiveRace)
-      return alert('Não é possível solicitar uma nova corrida')
+    if (isActiveRace) return
 
     setIsActiveRace(true)
 
@@ -112,8 +111,7 @@ export default function MapView() {
             scaleBarEnabled={false}
             logoEnabled={false}
             attributionEnabled={false}
-            onPress={newMarker}
-            >
+            onPress={isActiveRace ? undefined : newMarker}>
             <Map.Camera
               zoomLevel={17}
               centerCoordinate={[parseFloat(lng), parseFloat(lat)]}
@@ -124,7 +122,7 @@ export default function MapView() {
 
             {routeData && (
               <Map.ShapeSource id="routeSource" shape={routeData.geometry}>
-                <Map.LineLayer id="routeFill" style={{ lineColor: Colors.branding._400, lineWidth: 3, lineBorderColor: Colors.branding._300 }} />
+                <Map.LineLayer id="routeFill" belowLayerID="road-label" style={{ lineColor: Colors.branding._400, lineWidth: 3, lineBorderColor: Colors.branding._300 }} />
               </Map.ShapeSource>
             )}
 

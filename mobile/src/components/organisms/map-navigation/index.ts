@@ -1,2 +1,2 @@
-export * from './driver-maker'
+export * from './driver-marker'
 export * from './map-markers'
