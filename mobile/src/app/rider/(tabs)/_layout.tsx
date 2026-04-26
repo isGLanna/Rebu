@@ -1,28 +1,38 @@
 import { Tabs } from 'expo-router'
 import React from 'react'
-import { HapticTab } from '@/src/components/haptic-tab'
 import { Colors } from '@/src/styles/theme'
 import { useColorScheme,  } from '@hooks/use-color-scheme'
 import { StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useThemeColor } from '@/src/hooks/use-theme-color'
+import IconFA from '@expo/vector-icons/FontAwesome6'
+import IconO from '@expo/vector-icons/Octicons'
+import IconL from '@expo/vector-icons/Fontisto'
 
 export default function TabLayout() {
   const colorScheme = useColorScheme() === 'light' ? Colors.branding._400 + '60' : Colors.branding._600 + '60'
   const backgroundColor = useThemeColor({}, 'background')
+  const textColor = useThemeColor({}, 'text')
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: backgroundColor }}>
       <Tabs screenOptions={{
         tabBarStyle: styles.tabBar ,
-        tabBarButton: HapticTab,
         tabBarItemStyle: styles.tabBarItem,
         tabBarActiveBackgroundColor: colorScheme,
+        tabBarActiveTintColor: textColor,
+        tabBarInactiveTintColor: Colors.branding._500,
         headerShown: false,
         }}>
-        <Tabs.Screen name="index" options={{ title: 'Home', }} />
-        <Tabs.Screen name="history" options={{ title: 'History', }} />
-        <Tabs.Screen name="profile" options={{title: 'Profile', }} />
+        <Tabs.Screen name="index" options={{
+          title: 'Home', tabBarIcon: ({focused}) =>
+          <IconO name={focused ? 'home-fill' : 'home'} color={Colors.branding._500} size={24} /> }} />
+        <Tabs.Screen name="history" options={{
+          title: 'History',tabBarIcon: () =>
+          <IconL name='clock' color={Colors.branding._500} size={24}/> }} />
+        <Tabs.Screen name="profile" options={{
+          title: 'Profile', tabBarIcon: () =>
+          <IconFA name='user' color={Colors.branding._500} size={24} /> }} />
       </Tabs>
     </SafeAreaView>
   )

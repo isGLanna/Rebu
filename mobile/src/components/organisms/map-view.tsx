@@ -3,12 +3,13 @@ import { router } from 'expo-router'
 import { ThemedText } from '@comp/index'
 import Map from '@rnmapbox/maps'
 import { useThemeColor } from '@/src/hooks/use-theme-color'
-import { setParams } from 'expo-router/build/global-state/routing';
 
 interface MapViewProps {
   location?: { latitude: number, longitude: number }
   errorMsg?: string | null
 }
+
+Map.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN || '')
 
 export function MapView({ location, errorMsg }: MapViewProps) {
   const borderColor = useThemeColor({}, 'border')
