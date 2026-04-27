@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native';
 import { ThemedText } from '@/src/components/atoms/themed-text';
 import { ThemedView } from '@/src/components/atoms/themed-view';
 
-export default function ModalScreen() {
+export function ModalScreen() {
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title">This is a modal</ThemedText>
@@ -17,7 +17,10 @@ export default function ModalScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    position: 'absolute',
+    backgroundColor: 'rgb(21, 38, 48)',
+    borderColor: '#3185b6',
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,

@@ -12,11 +12,11 @@ type MapMarker = {
 
 interface MapMarkersProps {
   markers: MapMarker[],
-  isActiveRace: boolean,
+  isSearchingDriver: boolean,
   setMarkers: (markers: MapMarker[]) => void
 }
 
-export function MapMarkers({ markers, isActiveRace, setMarkers }: MapMarkersProps) {
+export function MapMarkers({ markers, isSearchingDriver, setMarkers }: MapMarkersProps) {
   return (
     <>
       {markers.map((marker) => {
@@ -24,7 +24,7 @@ export function MapMarkers({ markers, isActiveRace, setMarkers }: MapMarkersProp
           key={marker.key}
           id={marker.key}
           coordinate={[marker.coords.longitude, marker.coords.latitude]}
-          onSelected={() => isActiveRace ? null : setMarkers(markers.filter(m => m.key !== marker.key))}
+          onSelected={() => isSearchingDriver ? null : setMarkers(markers.filter(m => m.key !== marker.key))}
           >
           <Icon name="map-marker-alt" style={{ color: Colors.red._500 }} size={24} />
         </Map.PointAnnotation>

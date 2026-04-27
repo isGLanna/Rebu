@@ -1,12 +1,20 @@
+import type { RequestRaceResponse, RouteInfo } from '@/src/types/trip'
+import { Car } from '../types/car'
+import { Driver } from '../types/rider'
+
 export class TripManager {
-  static async requestRace() {
+  static async requestRace(origin: { latitude: number, longitude: number }, waypoints: { latitude: number, longitude: number }[]): Promise<RequestRaceResponse> {
     //const response = await fetch("nosso-backend.com/")
-    const response = await { status: 'success', car: { make: 'Fiat', model: 'Mobi', licensePlate: 'ABC1D23', color: 'Prata' }, driver: { name: 'João Silva', rating: 4.8, location: { latitude: -19.200520, longitude: -46.2355308 } },  }
+    const data = await this.fetchDirections(origin, waypoints)
+      if (!data)
+        return { status: 'error' }
+      
+    const response: RequestRaceResponse = { status: 'success', trip: { drivers: [{ driver: { name: 'Joao', rating: 4.8 }, car: { make: 'Fiat', model: 'Mobi', licensePlate: 'ABC1D23', color: 'Prata' } }]}, cost: data.cost, geometry: data.geometry, distance: data.distance, duration: data.duration }
     return response
   }
 
   static async acceptRace() {
-    const response = await { status: 'success' }
+    const response = await { status: 'success', driverLocation: { latitude: -19.200520, longitude: -46.2355308 } }  // Envia localização do motorista
     return response
   }
 
@@ -56,16 +64,20 @@ export class TripManager {
 
   // Simulador de preço
   static calculatePrice(distance: number, duration: number): number {
-    const base = 3.00
+    const base = 2.50
     const costPerKm = 1.0
     const costPerMin = 0.8
 
     const distanceCost = (distance / 1000) * costPerKm
     const durationCost = (duration / 60) * costPerMin
-    
-    alert('Preço por hora do motorista: R$ ' + ((base + distanceCost + durationCost)/ (duration / 3600)).toFixed(2))
 
     return (base + distanceCost + durationCost)
+  }
+
+  static async checkExistingRace(): Promise<{ status: string, trip: { driver: Driver; car: Car, cost: number } | null }> {
+    // Simulação de verificação de corrida existente
+    const response = await { status: 'success', trip: null }
+    return response
   }
 }
 
