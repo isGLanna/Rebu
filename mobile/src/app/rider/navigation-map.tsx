@@ -1,14 +1,17 @@
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Map from '@rnmapbox/maps'
 import { TripManager } from '@api/trip-manager'
 import { useLocalSearchParams } from 'expo-router'
 import { Colors } from '@/src/styles/theme'
 import { MapMarkers, DriverMarker } from '@organisms/map-navigation/index'
 import type { Driver } from '@comp/../types/rider'
+import { BottomSheetModal } from '@gorhom/bottom-sheet'
 
 import IconMD from '@expo/vector-icons/MaterialCommunityIcons'
+import { DriverListSheet } from '@/src/components/organisms/map-navigation/driver-list-sheet';
+import { Car } from '@/src/types/car';
 
 type MapMarker = {
   key: string,
@@ -31,9 +34,11 @@ export default function MapView() {
   const [ markers, setMarkers ] = useState<MapMarker[]>([])
   const [ routeData, setRouteData ] = useState<RouteInfo | null>(null)
   const [ isActiveRace, setIsActiveRace ] = useState(false)
-  const [ driver, setDriver ] = useState<Driver | null>(null)
+  const [ trip, setTrip ] = useState<{driver: Driver} & { car: Car } & { cost: number } | null>(null)
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null)
 
-  function newMarker(e: { geometry: { coordinates: number[] } }) {
+  // Adiciona marcadores no mapa
+  const newMarker = (e: { geometry: { coordinates: number[] } }) => {
     if (markers.length >= 3) return alert('Limite de três paradas atingido')
 
     const newMarkerData: MapMarker = {
@@ -49,17 +54,16 @@ export default function MapView() {
 
   // Bloqueia e solicita nova corrida e indica posição do motorista
   const handleRequestRace = async () => {
-    if (isActiveRace) return
+    if (isActiveRace || markers.length === 0) return
 
     setIsActiveRace(true)
-
     try {
       const response = await TripManager.requestRace()
 
       if (response.status !== 'success')
         return alert('Não foi possível solicitar a corrida')
 
-      setDriver(response.driver)
+      setTrip({ driver: response.driver, car: response.car, cost: 0 })
 
       handleRaceRoute(response.driver.location)
     } catch (error) {
@@ -72,7 +76,6 @@ export default function MapView() {
     if (!driverLocation)
       return alert('Aguardando um motorista...')
 
-
     const route = await TripManager.fetchDirections(
       {latitude: parseFloat(lat), longitude: parseFloat(lng)},
       markers.map(m => m.coords)
@@ -80,28 +83,29 @@ export default function MapView() {
 
     // Caso algo falhe, cancele a corrida e libere para solicitar outra
     if (!route) {
-      setDriver(null)
+      setTrip(null)
       setIsActiveRace(false)
       return
     }
+
     setRouteData(route)
+    setTrip((prev) => prev ? { ...prev, cost: route.cost } : null)
   }
 
   // Atualiza posição do motorista após aceitar corrida
   useEffect(() => {
-    if (!driver) return
+    if (!trip) return
 
     const requestDriverPosition = setInterval(() => {
         TripManager.driverPosition().then(position => {
-          setDriver({...driver, location: {
-            latitude: position.latitude,
-            longitude: position.longitude
-          }})
+          setTrip((prev) => prev ?
+            { ...prev, driver: { ...prev.driver, location: position } }
+            : null)
       })
-    }, 1000)
+    }, 2000)
 
     return () => clearInterval(requestDriverPosition)
-  }, [driver])
+  }, [trip])
 
   return(
     <SafeAreaView edges={['top']} style={{ flex: 1 }}>
@@ -126,15 +130,20 @@ export default function MapView() {
               </Map.ShapeSource>
             )}
 
-            <DriverMarker localization={driver?.location} />
+            <DriverMarker localization={trip?.driver?.location} />
 
             <MapMarkers markers={markers} isActiveRace={isActiveRace} setMarkers={setMarkers} />
-
         </Map.MapView>
-        <TouchableOpacity style={styles.advanceIcon} activeOpacity={0.6} onPress={() => handleRequestRace()}>
-          <IconMD name="car-arrow-right" size={32} color='#fff' />
-        </TouchableOpacity>
 
+        {trip &&  // Campo de listagem de motoristas, existe apenas enquanto houver um motorista alocado para a corrida
+          <DriverListSheet driver={trip.driver} car={trip.car} cost={trip.cost} />
+        }
+
+        {!trip && // Botão para solicitar corrida, aparece apenas enquanto não houver solicitado motoristas
+          <TouchableOpacity style={styles.advanceIcon} activeOpacity={0.6} onPress={() => handleRequestRace()}>
+            <IconMD name="car-arrow-right" size={32} color='#fff' />
+          </TouchableOpacity>
+        }
       </View>
     </SafeAreaView>
 

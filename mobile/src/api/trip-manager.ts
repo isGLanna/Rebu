@@ -1,7 +1,7 @@
 export class TripManager {
   static async requestRace() {
     //const response = await fetch("nosso-backend.com/")
-    const response = await { status: 'success', car: { model: 'Fiat Mobi', plate: 'ABC1D23' }, driver: { name: 'João Silva', rating: 4.8, location: { latitude: -23.550520, longitude: -46.633308 } },  }
+    const response = await { status: 'success', car: { make: 'Fiat', model: 'Mobi', licensePlate: 'ABC1D23', color: 'Prata' }, driver: { name: 'João Silva', rating: 4.8, location: { latitude: -19.200520, longitude: -46.2355308 } },  }
     return response
   }
 
@@ -25,29 +25,47 @@ export class TripManager {
       const response = await fetch(url)
       const data = await response.json()
 
-      if (data.code === 'Ok' && data.routes.length > 0) {
-        const route = data.routes[0]
+      if (data.code !== 'Ok' && data.routes.length === 0)
+        return null
 
-        const distance = route.distance > 1000 ?
-          route.distance / 1000 + ' km'
-          : route.distance + ' m'
+      const route = data.routes[0]
 
-        const duration = Math.round(route.duration / 60) + ' min'
+      const distance = route.distance > 1000 ?
+        route.distance / 1000 + ' km'
+        : route.distance + ' m'
 
-        return ({
-          geometry: route.geometry,
-          distance,
-          duration,
-        })
-      }
+      const duration = Math.round(route.duration / 60) + ' min'
+
+      const cost = this.calculatePrice(route.distance, route.duration)
+
+      return ({
+        geometry: route.geometry,
+        distance,
+        duration,
+        cost
+      })
     } catch (error) {
       alert('Não foi possível calcular a rota')
     }
   }
 
   static async driverPosition() {
-    const response = await { latitude: -23.550520, longitude: -46.633308 }
+    const response = await { latitude: -19.200520, longitude: -46.2355308 }
     return response
+  }
+
+  // Simulador de preço
+  static calculatePrice(distance: number, duration: number): number {
+    const base = 3.00
+    const costPerKm = 1.0
+    const costPerMin = 0.8
+
+    const distanceCost = (distance / 1000) * costPerKm
+    const durationCost = (duration / 60) * costPerMin
+    
+    alert('Preço por hora do motorista: R$ ' + ((base + distanceCost + durationCost)/ (duration / 3600)).toFixed(2))
+
+    return (base + distanceCost + durationCost)
   }
 }
 
