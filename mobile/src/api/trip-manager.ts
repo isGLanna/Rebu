@@ -1,12 +1,20 @@
+import type { RequestRaceResponse, RouteInfo } from '@/src/types/trip'
+import { Car } from '../types/car'
+import { Driver } from '../types/rider'
+
 export class TripManager {
-  static async requestRace() {
+  static async requestRace(origin: { latitude: number, longitude: number }, waypoints: { latitude: number, longitude: number }[]): Promise<RequestRaceResponse> {
     //const response = await fetch("nosso-backend.com/")
-    const response = await { status: 'success', car: { model: 'Fiat Mobi', plate: 'ABC1D23' }, driver: { name: 'João Silva', rating: 4.8, location: { latitude: -23.550520, longitude: -46.633308 } },  }
+    const data = await this.fetchDirections(origin, waypoints)
+      if (!data)
+        return { status: 'error' }
+      
+    const response: RequestRaceResponse = { status: 'success', trip: { drivers: [{ driver: { name: 'Joao', rating: 4.8 }, car: { make: 'Fiat', model: 'Mobi', licensePlate: 'ABC1D23', color: 'Prata' } }]}, cost: data.cost, geometry: data.geometry, distance: data.distance, duration: data.duration }
     return response
   }
 
   static async acceptRace() {
-    const response = await { status: 'success' }
+    const response = await { status: 'success', driverLocation: { latitude: -19.200520, longitude: -46.2355308 } }  // Envia localização do motorista
     return response
   }
 
@@ -25,28 +33,50 @@ export class TripManager {
       const response = await fetch(url)
       const data = await response.json()
 
-      if (data.code === 'Ok' && data.routes.length > 0) {
-        const route = data.routes[0]
+      if (data.code !== 'Ok' && data.routes.length === 0)
+        return null
 
-        const distance = route.distance > 1000 ?
-          route.distance / 1000 + ' km'
-          : route.distance + ' m'
+      const route = data.routes[0]
 
-        const duration = Math.round(route.duration / 60) + ' min'
+      const distance = route.distance > 1000 ?
+        route.distance / 1000 + ' km'
+        : route.distance + ' m'
 
-        return ({
-          geometry: route.geometry,
-          distance,
-          duration,
-        })
-      }
+      const duration = Math.round(route.duration / 60) + ' min'
+
+      const cost = this.calculatePrice(route.distance, route.duration)
+
+      return ({
+        geometry: route.geometry,
+        distance,
+        duration,
+        cost
+      })
     } catch (error) {
       alert('Não foi possível calcular a rota')
     }
   }
 
   static async driverPosition() {
-    const response = await { latitude: -23.550520, longitude: -46.633308 }
+    const response = await { latitude: -19.200520, longitude: -46.2355308 }
+    return response
+  }
+
+  // Simulador de preço
+  static calculatePrice(distance: number, duration: number): number {
+    const base = 2.50
+    const costPerKm = 1.0
+    const costPerMin = 0.8
+
+    const distanceCost = (distance / 1000) * costPerKm
+    const durationCost = (duration / 60) * costPerMin
+
+    return (base + distanceCost + durationCost)
+  }
+
+  static async checkExistingRace(): Promise<{ status: string, trip: { driver: Driver; car: Car, cost: number } | null }> {
+    // Simulação de verificação de corrida existente
+    const response = await { status: 'success', trip: null }
     return response
   }
 }
