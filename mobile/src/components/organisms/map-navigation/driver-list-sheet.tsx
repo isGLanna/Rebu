@@ -19,6 +19,7 @@ export function DriverListSheet({ tripInfo, onAccept, onCancel }: DriverListShee
   const modalRef = useRef<BottomSheetModal>(null)
   const backgroundColor = useThemeColor({}, 'background')
   const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false)
+  const wasAccepted = useRef<boolean>(false)
 
   const snapPoints = ['10%', '20%', '50%']
 
@@ -31,12 +32,19 @@ export function DriverListSheet({ tripInfo, onAccept, onCancel }: DriverListShee
   }
 
   const handleAccept = (driver: Driver, car: Car) => {
+    wasAccepted.current = true
     onAccept(driver, car)
     modalRef.current?.close()
   }
 
+  // Garante que onCancel seja chamado somente se o modal fechar sem aceitar corrida (onCancel limpa estado de searchRace e COORDENADAS DE ROTA)
+  const handleOnDismiss = () => {
+    if (!wasAccepted.current) {
+      onCancel()
+    }
+  }
+
   return (
-    <View>
       <BottomSheetModal
         ref={modalRef}
         index={1}
@@ -44,30 +52,25 @@ export function DriverListSheet({ tripInfo, onAccept, onCancel }: DriverListShee
         backgroundStyle={{ backgroundColor }}
         handleIndicatorStyle={{ backgroundColor: Colors.grey._500 + '80' }}
         enablePanDownToClose={true}
-        onDismiss={onCancel}
+        onDismiss={handleOnDismiss}
         >
         <BottomSheetView  style={styles.header}>
 
-          {
-            tripInfo.drivers.map((driverInfo, index) => {
+          {tripInfo.drivers.map((driverInfo, index) => {
               const { driver, car } = driverInfo
               return (
                 <View key={index}>
                   <ThemedText style={styles.cost}>Preço estimado: R$ {tripInfo.cost.toFixed(2)}</ThemedText>
                   <DriverCard driverName={driver.name} rating={driver.rating} car={car} onPress={() => {handleAccept(driver, car)}} />
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
-                    <Button style={styles.button} onPress={onCancel}>Cancelar</Button>
                   </View>
                 </View>
               )
-            })
-          }
+            })}
+          <Button style={styles.button} onPress={onCancel}>Cancelar</Button>
 
         </BottomSheetView>
       </BottomSheetModal>
-      <ModalScreen />
-    </View>
-
   )
 }
 
@@ -75,14 +78,13 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 12,
+    gap: 8,
   },
   cost: {
     fontSize: 16,
     fontWeight: 'bold',
   },
   button: {
-    marginTop: 8,
     alignItems: 'center',
   }
 })

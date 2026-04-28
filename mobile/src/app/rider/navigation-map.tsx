@@ -81,7 +81,7 @@ export default function MapView() {
 
       setPendingTrip({
         route: { geometry: response.geometry, distance: response.distance, duration: response.duration },
-        cost: response.cost || 0
+        cost: response.cost
       })
 
       setActiveTrip({
@@ -129,10 +129,8 @@ export default function MapView() {
         cost: pendingTrip.cost
       })
       
-      setPendingTrip(null)
       setIsSearchingDriver(false)
       setIsRaceAccepted(true)
-      
     } catch (error) {
       alert(error || 'Ocorreu um erro ao aceitar a corrida. Tente novamente.')
     }
@@ -143,16 +141,12 @@ export default function MapView() {
 
     const requestDriverPosition = setInterval(() => {
       TripManager.driverPosition().then(coordinates => {
-        setActiveTrip(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            drivers: prev.drivers.map(driverInfo => ({
-              ...driverInfo,
-              driver: { ...driverInfo.driver, location: coordinates }
-            }))
+        setSelectedDriver(prev => prev ? {
+          ...prev, driver: {
+            ...prev.driver,
+            location: coordinates
           }
-        })
+        } : null)
       })
     }, 2000)
 
@@ -177,14 +171,14 @@ export default function MapView() {
             />
             <Map.UserLocation requestsAlwaysUse={true} visible={true}/>
 
-            {pendingTrip?.route && (
-              <Map.ShapeSource id="routeSource" shape={pendingTrip.route.geometry}>
+            {pendingTrip && (
+              <Map.ShapeSource id="routeSource" shape={pendingTrip?.route.geometry}>
                 <Map.LineLayer id="routeFill" belowLayerID="road-label" style={{ lineColor: Colors.branding._400, lineWidth: 3, lineBorderColor: Colors.branding._300 }} />
               </Map.ShapeSource>
             )}
 
-            {pendingTrip?.route && (
-              <DriverMarker localization={pendingTrip?.route.geometry} />
+            {selectedDriver?.driver.location && (
+              <DriverMarker localization={selectedDriver.driver.location} />
             )}
 
             <MapMarkers markers={markers} isSearchingDriver={isSearchingDriver} setMarkers={setMarkers} />
@@ -194,7 +188,7 @@ export default function MapView() {
           <DriverListSheet tripInfo={{ drivers: activeTrip.drivers, cost: pendingTrip.cost }} onAccept={handleAcceptRace} onCancel={handleCancelSearchRace}/>
         }
 
-        {(!isSearchingDriver && !isRaceAccepted) && // Mostra botão apenas na tela limpa inicial
+        {(!isSearchingDriver && !isRaceAccepted) &&
           <TouchableOpacity style={styles.advanceIcon} activeOpacity={0.6} onPress={handleRequestRace}>
             <IconMD name="car-arrow-right" size={32} color='#fff' />
           </TouchableOpacity>
