@@ -10,7 +10,7 @@ interface ButtonProps {
   children?: React.ReactNode
 }
 
-export function Button({ onPress, style, type='subtitle', children }: ButtonProps) {
+export function Button({ onPress, style, type='defaultSemiBold', children }: ButtonProps) {
   const buttonColor = useTheme().theme === 'light' ? Colors.branding._700 : Colors.branding._300
   return (
     <TouchableOpacity onPress={onPress} style={[{ backgroundColor: buttonColor }, buttonStyles.button, style]} activeOpacity={0.7}>

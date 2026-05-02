@@ -7,7 +7,6 @@ export type RouteInfo = {
 export type RequestRaceSuccess = {
   status: 'success'
   trip: {
-    drivers: {
       driver: {
         name: string
         rating: number
@@ -17,8 +16,7 @@ export type RequestRaceSuccess = {
         model: string
         licensePlate: string
         color: string
-      }
-    }[]
+    }
   }
   cost: number
   geometry: any

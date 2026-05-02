@@ -67,7 +67,7 @@ export default function Register () {
           </View>
         </View>
 
-        <Button onPress={() => router.push('/')} type='subtitle'>
+        <Button onPress={() => router.push('/')} type='defaultSemiBold'>
           Criar conta
         </Button>
       </View>

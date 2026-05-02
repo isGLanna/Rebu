@@ -64,7 +64,7 @@ export default function Login() {
               router.push('/rider')
             }
           }}
-          type='subtitle'>
+          type='defaultSemiBold'>
           Entrar
         </Button>
       </View>

@@ -1,16 +1,25 @@
-import { Link } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native'
 
-import { ThemedText } from '@/src/components/atoms/themed-text';
-import { ThemedView } from '@/src/components/atoms/themed-view';
+import { ThemedText } from '@/src/components/atoms/themed-text'
+import { ThemedView } from '@/src/components/atoms/themed-view'
+import { useThemeColor } from '@hooks/use-theme-color'
+import { Colors } from '@/src/styles/theme'
 
-export function ModalScreen() {
+interface ModalScreenProps {
+  title: string
+  children?: React.ReactNode
+}
+
+export function ModalScreen({title, children}: ModalScreenProps) {
+  const shadowColor = Colors.branding._500 + '80'
+  const borderColor = useThemeColor({}, 'border')
+
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title">This is a modal</ThemedText>
-      <Link href="/" dismissTo style={styles.link}>
-        <ThemedText type="link">Go to home screen</ThemedText>
-      </Link>
+    <ThemedView style={[styles.container, { boxShadow: `2px 2px 12px ${shadowColor}`, borderColor }]}>
+      <ThemedText type="subtitle">{title}</ThemedText>
+      <ThemedView>
+        {children}
+      </ThemedView>
     </ThemedView>
   );
 }
@@ -18,15 +27,14 @@ export function ModalScreen() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    backgroundColor: 'rgb(21, 38, 48)',
-    borderColor: '#3185b6',
+    alignSelf: 'center',
+    top: '30%',
     borderWidth: 1,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
+    padding: 24,
+    gap: 16,
+    marginHorizontal: 16,
   },
 });

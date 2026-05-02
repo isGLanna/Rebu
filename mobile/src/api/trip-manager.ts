@@ -9,7 +9,7 @@ export class TripManager {
       if (!data)
         return { status: 'error' }
       
-    const response: RequestRaceResponse = { status: 'success', trip: { drivers: [{ driver: { name: 'Joao', rating: 4.8 }, car: { make: 'Fiat', model: 'Mobi', licensePlate: 'ABC1D23', color: 'Prata' } }]}, cost: data.cost, geometry: data.geometry, distance: data.distance, duration: data.duration }
+    const response: RequestRaceResponse = { status: 'success', trip: { driver: { name: 'Joao', rating: 4.8 }, car: { make: 'Fiat', model: 'Mobi', licensePlate: 'ABC1D23', color: 'Prata' } }, cost: data.cost, geometry: data.geometry, distance: data.distance, duration: data.duration }
     return response
   }
 
