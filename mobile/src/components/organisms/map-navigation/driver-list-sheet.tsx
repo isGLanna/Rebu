@@ -28,10 +28,6 @@ export function DriverListSheet({ tripInfo, onAccept, onCancel, onRequestNewDriv
     modalRef.current?.present()
   }, [])
 
-  const openModal = () => {
-    setIsModalOpen(true)
-  }
-
   const handleAccept = (driver: Driver, car: Car) => {
     wasAccepted.current = true
     onAccept(driver, car)

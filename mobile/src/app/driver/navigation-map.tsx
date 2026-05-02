@@ -6,7 +6,7 @@ import Map from "@rnmapbox/maps"
 
 Map.setAccessToken("pk.eyJ1IjoiZ2lvcmRhbm9sYW5uYSIsImEiOiJjbW8wdDV2NTcwYzlwMnhveTVja3htdTRzIn0.hNzDdxjqav0FBkeRIsag0w")
 
-export default function Home() {
+export default function MapView() {
   const [ location, setLocation ] = useState<Location.LocationObject | null>(null)
   const [ errorMsg, setErrorMsg ] = useState<string | null>(null)
 
@@ -56,6 +56,7 @@ export default function Home() {
           animationMode={'flyTo'}
           animationDuration={0}
         />
+        <Map.UserLocation requestsAlwaysUse={true} visible={true}/>
       </Map.MapView>
     </ThemedView>
   )
@@ -64,13 +65,14 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   span: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: 'semibold',
   },
   cardMaps: {
-    flex: 1,
-    borderRadius: 16,
+    height: '100%',
   }
 })
