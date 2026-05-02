@@ -1,4 +1,3 @@
-import { useThemeColor } from '@/src/hooks/use-theme-color'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { Stack } from 'expo-router'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -6,7 +5,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 const anchor = '(tabs)'
 
 export default function Layout() {
-  const backgroundColor = useThemeColor({}, 'background')
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>

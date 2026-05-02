@@ -25,7 +25,8 @@ Map.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN || '')
 export default function MapView() {
   // Coordenadas e Marcadores
   const { lat, lng } = useLocalSearchParams<{ lat: string, lng: string }>()
-  const initialCenterCoordinate = useMemo(() => [parseFloat(lng), parseFloat(lat)], [lat, lng])
+  const [startingPoint, setStartingPoint] = useState<{ latitude: number, longitude: number }>({ latitude: parseFloat(lat), longitude: parseFloat(lng) })
+  const [changedStartingPoint, setChangedStartingPoint] = useState<boolean>(false)
   const [markers, setMarkers] = useState<MapMarker[]>([])
 
   //Controladores de estados da corrida
@@ -52,8 +53,16 @@ export default function MapView() {
 
   // Adiciona marcadores no mapa
   const newMarker = useCallback((e: { geometry: { coordinates: number[] } }) => {
-    if (markers.length >= 3) return alert('Limite de três paradas atingido')
+    if (markers.length >= 3 && (changedStartingPoint && markers.length >= 4)) return alert('Limite de três paradas atingido')
 
+    // Primeiro marcador defini ponto de partida, senão adiciona ponto de parada
+    if (markers.length === 0 && changedStartingPoint){
+      setStartingPoint(({
+        latitude: e.geometry.coordinates[1],
+        longitude: e.geometry.coordinates[0]
+      }))
+      setChangedStartingPoint(true)
+    }
     const newMarkerData: MapMarker = {
       key: `marker-${Date.now()}`,
       coords: {
@@ -61,18 +70,17 @@ export default function MapView() {
         longitude: e.geometry.coordinates[0],
       }
     }
-
     setMarkers((prev) => [...prev, newMarkerData])
-  }, [markers])
+  }, [markers, changedStartingPoint, startingPoint])
 
   // Solicita corrida
   const handleRequestRace = useCallback(async () => {
-    if (isRaceAccepted || markers.length === 0) return
+    if (isRaceAccepted || markers.length === 0 || (changedStartingPoint && markers.length === 1)) return
 
     setIsSearchingDriver(true)
     try {
       const response = await TripManager.requestRace(
-        { latitude: initialCenterCoordinate[1], longitude: initialCenterCoordinate[0] },
+        { latitude: startingPoint.latitude, longitude: startingPoint.longitude },
         markers.map(m => m.coords)
       )
 
@@ -96,12 +104,12 @@ export default function MapView() {
       setIsSearchingDriver(false)
       alert(error || 'Ocorreu um erro ao solicitar a corrida. Tente novamente.')
     }
-  }, [isRaceAccepted, markers, initialCenterCoordinate])
+  }, [isRaceAccepted, markers, startingPoint])
 
   const handleRequestNewDriver = useCallback(async () => {
     try {
       const response = await TripManager.requestRace(
-        { latitude: initialCenterCoordinate[1], longitude: initialCenterCoordinate[0] },
+        { latitude: startingPoint.latitude, longitude: startingPoint.longitude },
         markers.map(m => m.coords)
       )
 
@@ -117,7 +125,7 @@ export default function MapView() {
       setActiveTrip(null)
       alert(error || 'Ocorreu um erro ao solicitar um novo motorista. Tente novamente.')
     }
-  }, [markers, initialCenterCoordinate])
+  }, [markers, startingPoint])
 
   // Cancela a busca de motoristas
   const handleCancelSearchRace = useCallback(() => {
@@ -177,7 +185,7 @@ export default function MapView() {
           >
             <Map.Camera
               zoomLevel={16}
-              centerCoordinate={initialCenterCoordinate}
+              centerCoordinate={startingPoint ? [startingPoint.longitude, startingPoint.latitude] : undefined}
               animationMode={'flyTo'}
               animationDuration={0}
             />
@@ -193,15 +201,19 @@ export default function MapView() {
               <DriverMarker localization={selectedDriver.driver.location} />
             )}
 
-            <MapMarkers markers={markers} isSearchingDriver={isSearchingDriver} setMarkers={setMarkers} />
+            <MapMarkers markers={markers} isSearchingDriver={isSearchingDriver} setMarkers={setMarkers} isStartingPoint={changedStartingPoint} />
         </Map.MapView>
 
         {activeTrip && pendingTrip &&         // Lista de motoristas disponíveis para corrida
           <DriverListSheet tripInfo={{ driver: activeTrip.driver, car: activeTrip.car, cost: pendingTrip.cost }} onAccept={handleAcceptRace} onCancel={handleCancelSearchRace} onRequestNewDriver={handleRequestNewDriver}/>
         }
+        
+        <TouchableOpacity style={styles.bottomLeftIcon} activeOpacity={0.6} onPress={() => setChangedStartingPoint(prev => !prev)}>
+          <IconMD name='pin-outline' size={32} color='#fff' />
+        </TouchableOpacity>
 
         {(!isSearchingDriver && !isRaceAccepted) &&
-          <TouchableOpacity style={styles.advanceIcon} activeOpacity={0.6} onPress={handleRequestRace}>
+          <TouchableOpacity style={styles.bottomRightIcon} activeOpacity={0.6} onPress={handleRequestRace}>
             <IconMD name="car-arrow-right" size={32} color='#fff' />
           </TouchableOpacity>
         }
@@ -213,12 +225,23 @@ export default function MapView() {
 const styles = StyleSheet.create({
   map: { width: '100%', height: '100%' },
   cardMaps: { width: '100%', borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
-  advanceIcon: {
+  bottomRightIcon: {
     position: 'absolute',
     backgroundColor: Colors.branding._500,
     borderRadius: 24,
     bottom: 24,
     right: 24,
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bottomLeftIcon: {
+    position: 'absolute',
+    backgroundColor: Colors.branding._500,
+    borderRadius: 24,
+    bottom: 24,
+    left: 24,
     width: 48,
     height: 48,
     alignItems: 'center',
