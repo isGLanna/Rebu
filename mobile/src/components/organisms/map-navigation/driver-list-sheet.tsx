@@ -10,18 +10,19 @@ import { Button, ThemedText } from '@comp/index'
 import { ModalScreen } from '../modal'
 
 interface DriverListSheetProps {
-  tripInfo: { drivers: { driver: Driver; car: Car}[], cost: number }
+  tripInfo: { driver: Driver, car: Car, cost: number }
   onAccept: (driver: Driver, car: Car) => void
   onCancel: () => void
+  onRequestNewDriver: () => void
 }
 
-export function DriverListSheet({ tripInfo, onAccept, onCancel }: DriverListSheetProps) {
+export function DriverListSheet({ tripInfo, onAccept, onCancel, onRequestNewDriver }: DriverListSheetProps) {
   const modalRef = useRef<BottomSheetModal>(null)
   const backgroundColor = useThemeColor({}, 'background')
   const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false)
   const wasAccepted = useRef<boolean>(false)
 
-  const snapPoints = ['10%', '20%', '50%']
+  const snapPoints = ['8%', '20%']
 
   useEffect(() => {
     modalRef.current?.present()
@@ -45,32 +46,42 @@ export function DriverListSheet({ tripInfo, onAccept, onCancel }: DriverListShee
   }
 
   return (
-      <BottomSheetModal
-        ref={modalRef}
-        index={1}
-        snapPoints={snapPoints}
-        backgroundStyle={{ backgroundColor }}
-        handleIndicatorStyle={{ backgroundColor: Colors.grey._500 + '80' }}
-        enablePanDownToClose={true}
-        onDismiss={handleOnDismiss}
-        >
-        <BottomSheetView  style={styles.header}>
+      <>
+        <BottomSheetModal
+          ref={modalRef}
+          index={1}
+          snapPoints={snapPoints}
+          backgroundStyle={{ backgroundColor }}
+          handleIndicatorStyle={{ backgroundColor: Colors.grey._500 + '80' }}
+          enablePanDownToClose={true}
+          onDismiss={handleOnDismiss}
+          >
+          <BottomSheetView  style={styles.header}>
+            <View>
+              <ThemedText style={styles.cost}>Preço estimado: R$ {tripInfo.cost.toFixed(2)}</ThemedText>
+              <DriverCard driverName={tripInfo.driver.name} rating={tripInfo.driver.rating} car={tripInfo.car} onPress={() => setIsModalOpen(prev => !prev)} />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
+              </View>
+            </View>
+            <Button style={styles.button} onPress={onRequestNewDriver}>Solicitar novo motorista</Button>
+          </BottomSheetView>
+        </BottomSheetModal>
 
-          {tripInfo.drivers.map((driverInfo, index) => {
-              const { driver, car } = driverInfo
-              return (
-                <View key={index}>
-                  <ThemedText style={styles.cost}>Preço estimado: R$ {tripInfo.cost.toFixed(2)}</ThemedText>
-                  <DriverCard driverName={driver.name} rating={driver.rating} car={car} onPress={() => {handleAccept(driver, car)}} />
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
-                  </View>
-                </View>
-              )
-            })}
-          <Button style={styles.button} onPress={onCancel}>Cancelar</Button>
+        {isModalOpen && (
+          <ModalScreen title="Deseja continuar com a corrida?">
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <Button onPress={onCancel}>Cancelar</Button>
+              <Button  onPress={() => {
+                handleAccept(tripInfo.driver, tripInfo.car)
+                setIsModalOpen(prev => !prev)
+                }}>
+                Confirmar
+              </Button>
+            </View>
 
-        </BottomSheetView>
-      </BottomSheetModal>
+          </ModalScreen>
+        )}
+      </>
   )
 }
 
@@ -81,7 +92,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cost: {
-    fontSize: 16,
     fontWeight: 'bold',
   },
   button: {

@@ -33,7 +33,7 @@ export default function MapView() {
   const [isRaceAccepted, setIsRaceAccepted] = useState(false)
 
   const [pendingTrip, setPendingTrip] = useState<{ route: RouteInfo, cost: number } | null>(null)
-  const [activeTrip, setActiveTrip] = useState<{drivers: {driver: Driver, car: Car }[] } | null>(null)
+  const [activeTrip, setActiveTrip] = useState<{ driver: Driver, car: Car } | null>(null)
   const [selectedDriver, setSelectedDriver] = useState<{ driver: Driver, car: Car, cost: number } | null>(null)
 
   // Verifica se há corrida existente ao montar componente
@@ -65,7 +65,7 @@ export default function MapView() {
     setMarkers((prev) => [...prev, newMarkerData])
   }, [markers])
 
-  // Solicita corrida 
+  // Solicita corrida
   const handleRequestRace = useCallback(async () => {
     if (isRaceAccepted || markers.length === 0) return
 
@@ -85,19 +85,10 @@ export default function MapView() {
       })
 
       setActiveTrip({
-        drivers: response.trip.drivers.map((driverInfo) => ({
-          driver: {
-            name: driverInfo.driver.name,
-            rating: driverInfo.driver.rating,
-            location: { latitude: 0, longitude: 0 }
-          },
-          car: {
-            make: driverInfo.car.make,
-            model: driverInfo.car.model,
-            licensePlate: driverInfo.car.licensePlate,
-            color: driverInfo.car.color
-          }
-        }))
+        driver: { location: {
+          latitude: 0, longitude: 0
+        }, ...response.trip.driver },
+        car: response.trip.car
       })
 
       setIsSearchingDriver(false)
@@ -106,6 +97,27 @@ export default function MapView() {
       alert(error || 'Ocorreu um erro ao solicitar a corrida. Tente novamente.')
     }
   }, [isRaceAccepted, markers, initialCenterCoordinate])
+
+  const handleRequestNewDriver = useCallback(async () => {
+    try {
+      const response = await TripManager.requestRace(
+        { latitude: initialCenterCoordinate[1], longitude: initialCenterCoordinate[0] },
+        markers.map(m => m.coords)
+      )
+
+      if (response.status !== 'success')
+        throw new Error('Não foi possível solicitar a corrida')
+
+      setActiveTrip({
+        driver: { location: {
+          latitude: 0, longitude: 0 }, ...response.trip.driver },
+        car: response.trip.car
+      })
+    } catch (error) {
+      setActiveTrip(null)
+      alert(error || 'Ocorreu um erro ao solicitar um novo motorista. Tente novamente.')
+    }
+  }, [markers, initialCenterCoordinate])
 
   // Cancela a busca de motoristas
   const handleCancelSearchRace = useCallback(() => {
@@ -185,7 +197,7 @@ export default function MapView() {
         </Map.MapView>
 
         {activeTrip && pendingTrip &&         // Lista de motoristas disponíveis para corrida
-          <DriverListSheet tripInfo={{ drivers: activeTrip.drivers, cost: pendingTrip.cost }} onAccept={handleAcceptRace} onCancel={handleCancelSearchRace}/>
+          <DriverListSheet tripInfo={{ driver: activeTrip.driver, car: activeTrip.car, cost: pendingTrip.cost }} onAccept={handleAcceptRace} onCancel={handleCancelSearchRace} onRequestNewDriver={handleRequestNewDriver}/>
         }
 
         {(!isSearchingDriver && !isRaceAccepted) &&

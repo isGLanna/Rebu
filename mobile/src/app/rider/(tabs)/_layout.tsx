@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 50,
-    boxShadow: `2px 2px 12px ${Colors.branding._500}60`,
+    boxShadow: `2px 2px 12px ${Colors.branding._500}80`,
     overflow: 'hidden',
   },
   tabBarItem: {
