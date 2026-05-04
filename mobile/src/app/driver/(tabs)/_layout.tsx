@@ -12,7 +12,6 @@ import IconL from '@expo/vector-icons/Fontisto'
 export default function TabLayout() {
   const colorScheme = useColorScheme() === 'light' ? Colors.branding._400 + '60' : Colors.branding._600 + '60'
   const backgroundColor = useThemeColor({}, 'background')
-  const textColor = useThemeColor({}, 'text')
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: backgroundColor }}>
@@ -20,7 +19,7 @@ export default function TabLayout() {
         tabBarStyle: styles.tabBar ,
         tabBarItemStyle: styles.tabBarItem,
         tabBarActiveBackgroundColor: colorScheme,
-        tabBarActiveTintColor: textColor,
+        tabBarActiveTintColor: Colors.branding._500,
         tabBarInactiveTintColor: Colors.branding._500,
         headerShown: false,
         }}>

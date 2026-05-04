@@ -8,6 +8,7 @@ import carIcon from '@comp/assets/car-icon.png'
 import thief from '@comp/assets/thief.png'
 import * as Location from 'expo-location'
 import { useThemeColor } from '@/src/hooks/use-theme-color'
+import { Colors } from '@/src/styles/theme'
 
 export default function Home() {
   const [ location, setLocation ] = useState<Location.LocationObject | null>(null)
@@ -39,15 +40,15 @@ export default function Home() {
         <ThemedText type='subtitle'>Serviços</ThemedText>
 
         <View style={styles.content}>
-          <TouchableOpacity style={[ styles.categoriesCard, { borderColor }]} activeOpacity={0.6}>
+          <TouchableOpacity style={[ styles.categoriesCard, { borderColor }]} activeOpacity={0.7}>
             <Image source={carIcon} style={styles.icon} resizeMode='contain'/>
             <ThemedText type='defaultSemiBold'>Corrida</ThemedText>
           </TouchableOpacity>
-          <TouchableOpacity style={[ styles.categoriesCard, { borderColor }]} activeOpacity={0.6}>
+          <TouchableOpacity style={[ styles.categoriesCard, { borderColor }]} activeOpacity={0.7}>
             <Image source={foodIcon} style={styles.icon} resizeMode='contain'/>
             <ThemedText type='defaultSemiBold'>Delivery</ThemedText>
           </TouchableOpacity>
-          <TouchableOpacity style={[ styles.categoriesCard, { borderColor }]} activeOpacity={0.6}>
+          <TouchableOpacity style={[ styles.categoriesCard, { borderColor }]} activeOpacity={0.7}>
             <Image source={packageIcon} style={styles.icon} resizeMode='contain'/>
             <ThemedText type='defaultSemiBold'>Encomendas</ThemedText>
           </TouchableOpacity>
@@ -55,14 +56,14 @@ export default function Home() {
 
         <ThemedText type='subtitle'>Instruções</ThemedText>
         <View style={ styles.content}>
-          <TouchableOpacity style={[ styles.card, { borderColor }]} activeOpacity={0.6}>
-            <Image source={thief} style={styles.icon} resizeMode='contain'/>
+          <TouchableOpacity style={[ styles.card, { borderColor }]} activeOpacity={0.7}>
+            <Image source={thief} style={[styles.icon, { backgroundColor: Colors.grey._500 }]} resizeMode='contain'/>
             <ThemedText>
             {'  '} Comportamentos suspeitos e fora do comum devem ficar sob alerta. Siga as diretrizes da plataforma para se manter seguro!
             </ThemedText>
           </TouchableOpacity>
-          <TouchableOpacity style={[ styles.card, { borderColor }]} activeOpacity={0.6}>
-            <Image source={thief} style={styles.icon} resizeMode='contain'/>
+          <TouchableOpacity style={[ styles.card, { borderColor }]} activeOpacity={0.7}>
+            <Image source={thief} style={[styles.icon, { backgroundColor: Colors.grey._500 }]} resizeMode='contain'/>
             <ThemedText>
             {'  '} Comportamentos suspeitos e fora do comum devem ficar sob alerta. Siga as diretrizes da plataforma para se manter seguro!
             </ThemedText>
@@ -104,13 +105,15 @@ const styles = StyleSheet.create({
     width: '47%',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 4,
     padding: 4,
     borderRadius: 16,
     borderWidth: 1,
   },
   icon: {
-    width: 60,
+    width: '100%',
     height: 50,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8
   },
 })

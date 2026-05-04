@@ -4,3 +4,10 @@ export type User = {
   password: string
   type: 'driver' | 'passenger'
 }
+
+export type UserProfile = {
+  name: string
+  type: 'motorista' | 'passageiro'
+  rating: number
+  image: string
+}
