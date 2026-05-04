@@ -23,7 +23,7 @@ export default function TabLayout() {
         tabBarInactiveTintColor: Colors.branding._500,
         headerShown: false,
         }}>
-        <Tabs.Screen name="index" options={{
+        <Tabs.Screen name="(index)/index" options={{
           title: 'Home', tabBarIcon: ({focused}) =>
           <IconO name={focused ? 'home-fill' : 'home'} color={Colors.branding._500} size={24} /> }} />
         <Tabs.Screen name="history" options={{

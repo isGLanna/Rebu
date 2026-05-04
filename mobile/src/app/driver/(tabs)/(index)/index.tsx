@@ -9,6 +9,7 @@ import thief from '@comp/assets/thief.png'
 import * as Location from 'expo-location'
 import { useThemeColor } from '@/src/hooks/use-theme-color'
 import { Colors } from '@/src/styles/theme'
+import { Loading } from './loading'
 
 export default function Home() {
   const [ location, setLocation ] = useState<Location.LocationObject | null>(null)
@@ -30,6 +31,12 @@ export default function Home() {
 
     getLocation()
   }, [])
+
+  if (location === null) {
+    return (
+      <Loading />
+    )
+  }
 
   return (
     <ScrollView style={{backgroundColor}}>
@@ -58,7 +65,7 @@ export default function Home() {
         <View style={ styles.content}>
           <TouchableOpacity style={[ styles.card, { borderColor }]} activeOpacity={0.7}>
             <Image source={thief} style={[styles.icon, { backgroundColor: Colors.grey._500 }]} resizeMode='contain'/>
-            <ThemedText>
+            <ThemedText type='regular'>
             {'  '} Comportamentos suspeitos e fora do comum devem ficar sob alerta. Siga as diretrizes da plataforma para se manter seguro!
             </ThemedText>
           </TouchableOpacity>
@@ -103,17 +110,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     width: '47%',
+    maxHeight: 200,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
     padding: 4,
     borderRadius: 16,
     borderWidth: 1,
+    textOverflow: 'ellipsis',
   },
   icon: {
     width: '100%',
     height: 50,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12
   },
 })

@@ -7,13 +7,17 @@ import { User } from '@/src/api/user'
 import { useEffect, useState } from 'react'
 import { Colors } from '@/src/styles/theme'
 import { router } from 'expo-router'
+import { Loading } from './loading'
 
 export default function Profile() {
   const [ user, setUser ] = useState<UserProfile | null>(null)
   const [currentTheme, setCurrentTheme] = useAsyncStorage('theme', Appearance.getColorScheme())
 
   useEffect(() => {
-    User.fetchUserProfile().then(profile => setUser(profile))
+    const timer = setTimeout(() => {
+      User.fetchUserProfile().then(profile => setUser(profile))
+    }, 2000)
+    return () => clearTimeout(timer)
   }, [])
 
   const handleLogout = () => {
@@ -29,9 +33,7 @@ export default function Profile() {
 
   if (user === null) {
     return (
-      <ThemedView style={styles.container}>
-        <ThemedText>Carregando perfil...</ThemedText>
-      </ThemedView>
+      <Loading />
     )
   }
 
@@ -42,8 +44,12 @@ export default function Profile() {
           <Image source={{ uri: 'https://us.123rf.com/450wm/anyaberkut/anyaberkut1603/anyaberkut160300954/59927355-happy-smiling-driver-in-the-car-portrait-of-young-successful-business-man.jpg'}} style={styles.avatar}/>
         </TouchableOpacity>
         <TouchableOpacity style={styles.presentation} activeOpacity={0.7}>
-          <ThemedText type='defaultSemiBold'>{user.name}</ThemedText>
-          <ThemedText>{user.type[0].toUpperCase() + user.type.slice(1)}</ThemedText>
+          <ThemedText style={{ marginBottom: 4 }} type='defaultSemiBold'>
+            {user.name}
+          </ThemedText>
+          <ThemedText>
+            {user.type[0].toUpperCase() + user.type.slice(1)}
+          </ThemedText>
 
           <View style={{ flexDirection: 'row'}}>
             <ThemedText>Avaliação: </ThemedText>
@@ -95,8 +101,9 @@ const styles = StyleSheet.create({
   },
   presentation: {
     flexDirection: 'column',
-    gap: 2,
     maxWidth: '60%',
+    justifyContent: 'center',
+    gap: 2,
   },
   button: {
     backgroundColor: 'transparent',
