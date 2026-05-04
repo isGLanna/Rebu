@@ -21,5 +21,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderWidth: 1,
     borderRadius: 8,
+    userSelect: 'none',
   }
 })

@@ -5,6 +5,7 @@ import { FloatingLabel } from '@molecules/animated-floating'
 import { Colors } from '../styles/theme'
 import { router } from 'expo-router'
 import { useThemeColor } from '../hooks/use-theme-color'
+import { useColorScheme } from '../hooks/use-color-scheme'
 
 export default function Login() {
   const formColor = useThemeColor({}, 'container')
@@ -15,6 +16,7 @@ export default function Login() {
     confirmPassword: '',
     accountType: null,
   })
+  const buttonColor = useColorScheme() === 'light' ? Colors.branding._500 : Colors.branding._600
 
   return (
     <ThemedView style={ styles.container }>
@@ -39,13 +41,13 @@ export default function Login() {
           <ThemedText style={{ paddingHorizontal: 8 }}>Tipo de conta</ThemedText>
           <View style={{ flexDirection: 'row', gap: 32, justifyContent: 'center', alignItems: 'center' }}>
             <Button
-              style={ user.accountType === 'rider' ? { backgroundColor: Colors.branding._600, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4 } : {}}
+              style={ user.accountType === 'rider' ? { backgroundColor: buttonColor, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4 } : {}}
               onPress={() => setUser(prev => ({...prev, accountType: 'rider'}))}
               type='normal'>
                 Passageiro
               </Button>
             <Button
-              style={ user.accountType === 'driver' ? { backgroundColor: Colors.branding._600, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4  } : {}}
+              style={ user.accountType === 'driver' ? { backgroundColor: buttonColor, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4  } : {}}
               onPress={() => setUser(prev => ({...prev, accountType: 'driver'}))}
               type='normal'>
                 Motorista

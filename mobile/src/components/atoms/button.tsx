@@ -2,6 +2,7 @@ import { TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from 'react-native
 import { ThemedText } from './themed-text'
 import { Colors } from '@/src/styles/theme'
 import { useColorScheme } from '@hooks/use-color-scheme'
+import { useThemeColor } from '@/src/hooks/use-theme-color'
 
 interface ButtonProps {
   onPress: () => void
@@ -12,7 +13,7 @@ interface ButtonProps {
 }
 
 export function Button({ onPress, style, type = 'defaultSemiBold', children }: ButtonProps) {
-  const buttonColor = Colors.branding._700
+  const buttonColor = useThemeColor({}, 'button')
   return (
     <TouchableOpacity
       onPress={onPress}

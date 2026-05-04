@@ -8,7 +8,7 @@ type ImageSkeletonProps = ViewProps & {
 }
 
 export function ImageSkeleton({ styles, ...props }: ImageSkeletonProps) {
-  const gradientColors = [Colors.grey._700, Colors.grey._500]
+  const gradientColors = [Colors.grey._500, Colors.grey._300]
   const animatedValue = useRef(new Animated.Value(0)).current
   const [ viewWidth, setViewWidth ] = useState(0)
 
@@ -18,7 +18,7 @@ export function ImageSkeleton({ styles, ...props }: ImageSkeletonProps) {
     const animated = Animated.loop(
       Animated.timing(animatedValue, {
         toValue: 1,
-        duration: 1000,
+        duration: 1200,
         useNativeDriver: true,
       })
     )
@@ -35,8 +35,7 @@ export function ImageSkeleton({ styles, ...props }: ImageSkeletonProps) {
   return (
     <View
       onLayout={(e) => setViewWidth(e.nativeEvent.layout.width)}
-      style={[{ flex: 1, backgroundColor: gradientColors[0], overflow: 'hidden', borderRadius: 4 }]}
-      {...props}
+      style={[{ flex: 1, backgroundColor: gradientColors[0], overflow: 'hidden', borderRadius: 8}, props.style]}
       >
       {viewWidth > 0 && (
         <Animated.View style={[StyleSheet.absoluteFill, {transform: [{ translateX }]}]}>

@@ -23,13 +23,13 @@ export default function TabLayout() {
         tabBarInactiveTintColor: Colors.branding._500,
         headerShown: false,
         }}>
-        <Tabs.Screen name="index" options={{
+        <Tabs.Screen name="(index)/index" options={{
           title: 'Home', tabBarIcon: ({focused}) =>
           <IconO name={focused ? 'home-fill' : 'home'} color={Colors.branding._500} size={24} /> }} />
         <Tabs.Screen name="history" options={{
           title: 'History',tabBarIcon: () =>
           <IconL name='clock' color={Colors.branding._500} size={24}/> }} />
-        <Tabs.Screen name="profile" options={{
+        <Tabs.Screen name="(profile)/profile" options={{
           title: 'Profile', tabBarIcon: () =>
           <IconFA name='user' color={Colors.branding._500} size={24} /> }} />
       </Tabs>

@@ -4,6 +4,7 @@ import { MapView } from '@organisms/index'
 import { useState, useEffect } from 'react'
 import * as Location from 'expo-location'
 import { useThemeColor } from '@/src/hooks/use-theme-color'
+import { Loading } from './loading'
 
 export default function Home() {
   const [ location, setLocation ] = useState<Location.LocationObject | null>(null)
@@ -24,6 +25,12 @@ export default function Home() {
 
     getLocation()
   }, [])
+
+  if (location === null) {
+    return (
+      <Loading />
+    )
+  }
 
   return (
     <ThemedView style={ styles.container }>
