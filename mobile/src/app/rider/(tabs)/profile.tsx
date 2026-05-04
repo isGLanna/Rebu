@@ -1,4 +1,4 @@
-import { ThemedText, ThemedView, Button } from '@comp/index'
+import { ThemedText, ThemedView, TextButton } from '@comp/index'
 import { View, StyleSheet, TouchableOpacity, Image, Appearance } from 'react-native'
 import IconFA from '@expo/vector-icons/FontAwesome'
 import { UserProfile } from '@/src/types/user'
@@ -52,17 +52,17 @@ export default function Profile() {
       </View>
 
       <View style={styles.section}>
-        <Button style={styles.button} onPress={() => {}}>Minhas viagens</Button>
-        <Button style={styles.button} onPress={() => {}}>Pagamento</Button>
-        <Button style={styles.button} onPress={() => {}}>Configurações</Button>
-        <Button style={styles.button} onPress={toggleTheme}>Tema</Button>
-        <Button style={styles.button} onPress={() => {}}>Suporte</Button>
+        <TextButton style={styles.button} onPress={() => {}}>Minhas viagens</TextButton>
+        <TextButton style={styles.button} onPress={() => {}}>Pagamento</TextButton>
+        <TextButton style={styles.button} onPress={() => {}}>Configurações</TextButton>
+        <TextButton style={styles.button} onPress={toggleTheme}>Tema</TextButton>
+        <TextButton style={styles.button} onPress={() => {}}>Suporte</TextButton>
       </View>
 
       <View style={[styles.section]}>
-        <Button style={styles.button} onPress={handleLogout}>
+        <TextButton style={styles.button} onPress={handleLogout}>
           Sair
-        </Button>
+        </TextButton>
       </View>
     </ThemedView>
   )

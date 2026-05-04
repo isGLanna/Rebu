@@ -1,10 +1,10 @@
-import { Button, ThemedView, ThemedText } from '@comp/index'
-import { ImageBackground, StyleSheet, View, Text } from 'react-native'
+import { Button, TextButton, ThemedView } from '@comp/index'
+import { ImageBackground, StyleSheet, View, Text, Appearance } from 'react-native'
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import { LinearGradient } from 'expo-linear-gradient'
 import { useThemeColor } from '@hooks/use-theme-color'
 import { authorize } from '@api/auth'
 import { router } from 'expo-router'
-import { Colors } from '../styles/theme'
 import { useEffect } from 'react'
 
 export default function App() {
@@ -18,6 +18,14 @@ export default function App() {
       }
     }
     verifyAuth()
+
+    const queryTheme = async () => {
+      const storedTheme = await AsyncStorage.getItem('theme') as ('light' | 'dark' | null)
+      const parsedTheme = JSON.parse(storedTheme || 'null')
+      await Appearance.setColorScheme(parsedTheme)
+    }
+
+    queryTheme()
   }, [])
   const backgroundColor = useThemeColor({}, 'background')
 
@@ -26,7 +34,7 @@ export default function App() {
       <ImageBackground
         source={require('../assets/images/background_1.png')}
         style={[styles.backgroundImage, { backgroundColor }]}>
-        <LinearGradient colors={[ 'transparent', Colors.branding._800 ]} locations={[0, 0.8]} style={ styles.gradient } />
+        <LinearGradient colors={[ 'transparent', backgroundColor ]} locations={[0, 0.8]} style={ styles.gradient } />
       </ImageBackground>
       <Text style={[ styles.title ]}>Rebu</Text>
 
@@ -34,12 +42,11 @@ export default function App() {
         <Button onPress={() => router.push('/login')} style={ styles.button }>
           Entrar
         </Button>
-        <ThemedText type='link' onPress={() => router.push('/register')}>
+        <TextButton type='link' onPress={() => router.push('/register')}>
           Cadastrar
-        </ThemedText>
+        </TextButton>
       </View>
     </ThemedView>
-
   )
 }
 

@@ -1,5 +1,6 @@
-import { ThemedText, ThemedView, Button } from '@comp/index'
+import { ThemedText, ThemedView, TextButton } from '@comp/index'
 import { View, StyleSheet, TouchableOpacity, Image, Appearance } from 'react-native'
+import { useAsyncStorage } from '@hooks/use-async-storage'
 import IconFA from '@expo/vector-icons/FontAwesome'
 import { UserProfile } from '@/src/types/user'
 import { User } from '@/src/api/user'
@@ -9,10 +10,11 @@ import { router } from 'expo-router'
 
 export default function Profile() {
   const [ user, setUser ] = useState<UserProfile | null>(null)
+  const [currentTheme, setCurrentTheme] = useAsyncStorage('theme', Appearance.getColorScheme())
 
   useEffect(() => {
     User.fetchUserProfile().then(profile => setUser(profile))
-  })
+  }, [])
 
   const handleLogout = () => {
     router.push('/')
@@ -20,7 +22,9 @@ export default function Profile() {
   }
 
   const toggleTheme = () => {
-    Appearance.setColorScheme(Appearance.getColorScheme() === 'light' ? 'dark' : 'light')
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light'
+    Appearance.setColorScheme(newTheme)
+    setCurrentTheme(newTheme)
   }
 
   if (user === null) {
@@ -52,17 +56,17 @@ export default function Profile() {
       </View>
 
       <View style={styles.section}>
-        <Button style={styles.button} onPress={() => {}}>Minhas viagens</Button>
-        <Button style={styles.button} onPress={() => {}}>Pagamento</Button>
-        <Button style={styles.button} onPress={() => {}}>Configurações</Button>
-        <Button style={styles.button} onPress={toggleTheme}>Tema</Button>
-        <Button style={styles.button} onPress={() => {}}>Suporte</Button>
+        <TextButton style={styles.button} onPress={() => {}}>Minhas viagens</TextButton>
+        <TextButton style={styles.button} onPress={() => {}}>Pagamento</TextButton>
+        <TextButton style={styles.button} onPress={() => {}}>Configurações</TextButton>
+        <TextButton style={styles.button} onPress={toggleTheme}>Tema</TextButton>
+        <TextButton style={styles.button} onPress={() => {}}>Suporte</TextButton>
       </View>
 
       <View style={[styles.section]}>
-        <Button style={styles.button} onPress={handleLogout}>
+        <TextButton style={styles.button} onPress={handleLogout}>
           Sair
-        </Button>
+        </TextButton>
       </View>
     </ThemedView>
   )
