@@ -11,9 +11,9 @@ export default function App() {
   useEffect(() => {
     const verifyAuth = async () => {
       const role = await authorize.isAuthtenticated()
-      if (role === 'driver') {
+      if (role === 'driver' || role === 'passenger') {
         router.push('/driver')
-      } else {
+      } else if (role === 'passenger') {
         router.push('/rider')
       }
     }
