@@ -22,7 +22,7 @@ export function DriverListSheet({ tripInfo, onAccept, onCancel, onRequestNewDriv
   const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false)
   const wasAccepted = useRef<boolean>(false)
 
-  const snapPoints = ['8%', '20%']
+  const snapPoints = ['8%', '30%']
 
   useEffect(() => {
     modalRef.current?.present()

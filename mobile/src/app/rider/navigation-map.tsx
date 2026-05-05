@@ -11,6 +11,7 @@ import IconMD from '@expo/vector-icons/MaterialCommunityIcons'
 import { DriverListSheet } from '@/src/components/organisms/map-navigation/driver-list-sheet';
 import { Car } from '@/src/types/car';
 import { RouteInfo } from '@/src/types/trip'
+import * as Location from 'expo-location'
 
 type MapMarker = {
   key: string,
@@ -64,7 +65,7 @@ export default function MapView() {
       setChangedStartingPoint(true)
     }
     const newMarkerData: MapMarker = {
-      key: `marker-${Date.now()}`,
+      key: `marker-${Math.random().toString(8)}`,
       coords: {
         latitude: e.geometry.coordinates[1],
         longitude: e.geometry.coordinates[0],
@@ -79,8 +80,9 @@ export default function MapView() {
 
     setIsSearchingDriver(true)
     try {
+      const { latitude, longitude } = changedStartingPoint ? markers[0].coords : { latitude: parseFloat(lat), longitude: parseFloat(lng) }
       const response = await TripManager.requestRace(
-        { latitude: startingPoint.latitude, longitude: startingPoint.longitude },
+        { latitude, longitude },
         markers.map(m => m.coords)
       )
 
@@ -104,8 +106,9 @@ export default function MapView() {
       setIsSearchingDriver(false)
       alert(error || 'Ocorreu um erro ao solicitar a corrida. Tente novamente.')
     }
-  }, [isRaceAccepted, markers, startingPoint])
+  }, [isRaceAccepted, markers, startingPoint, changedStartingPoint])
 
+  // Solicita um novo motorista
   const handleRequestNewDriver = useCallback(async () => {
     try {
       const response = await TripManager.requestRace(
@@ -156,6 +159,7 @@ export default function MapView() {
     }
   }, [pendingTrip])
 
+  // Solicita posição do motorista em intervalos regulares
   useEffect(() => {
     if (!isRaceAccepted || !activeTrip) return
 
@@ -168,7 +172,7 @@ export default function MapView() {
           }
         } : null)
       })
-    }, 2000)
+    }, 1000)
 
     return () => clearInterval(requestDriverPosition)
   }, [isRaceAccepted])
@@ -204,16 +208,18 @@ export default function MapView() {
             <MapMarkers markers={markers} isSearchingDriver={isSearchingDriver} setMarkers={setMarkers} isStartingPoint={changedStartingPoint} />
         </Map.MapView>
 
-        {activeTrip && pendingTrip &&         // Lista de motoristas disponíveis para corrida
+        {activeTrip && pendingTrip &&         // Motorista disponível para corrida
           <DriverListSheet tripInfo={{ driver: activeTrip.driver, car: activeTrip.car, cost: pendingTrip.cost }} onAccept={handleAcceptRace} onCancel={handleCancelSearchRace} onRequestNewDriver={handleRequestNewDriver}/>
         }
         
-        <TouchableOpacity style={styles.bottomLeftIcon} activeOpacity={0.6} onPress={() => setChangedStartingPoint(prev => !prev)}>
-          <IconMD name='pin-outline' size={32} color='#fff' />
+        <TouchableOpacity style={styles.bottomLeftIcon} activeOpacity={0.7} onPress={() => setChangedStartingPoint(prev => !prev)}>
+          {changedStartingPoint ?
+            <IconMD name='pin' size={32} color='#fff' /> :
+            <IconMD name='pin-outline' size={32} color='#fff' />}
         </TouchableOpacity>
 
         {(!isSearchingDriver && !isRaceAccepted) &&
-          <TouchableOpacity style={styles.bottomRightIcon} activeOpacity={0.6} onPress={handleRequestRace}>
+          <TouchableOpacity style={styles.bottomRightIcon} activeOpacity={0.7} onPress={handleRequestRace}>
             <IconMD name="car-arrow-right" size={32} color='#fff' />
           </TouchableOpacity>
         }

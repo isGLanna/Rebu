@@ -1,5 +1,5 @@
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { router } from 'expo-router'
+import { router, usePathname } from 'expo-router'
 import { ThemedText } from '@comp/index'
 import Map from '@rnmapbox/maps'
 import { useThemeColor } from '@/src/hooks/use-theme-color'
@@ -13,33 +13,34 @@ Map.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN || '')
 
 export function MapView({ location, errorMsg }: MapViewProps) {
   const borderColor = useThemeColor({}, 'border')
+  const accountType = usePathname().includes('driver') ? 'driver' : 'rider'
 
   if (errorMsg) {
     return (
-        <View style={[ styles.cardMaps, { borderColor: borderColor } ]}>
-          <ThemedText style={{ paddingHorizontal: 16, paddingVertical: 4 }} type="subtitle">Mapa</ThemedText>
-          <TouchableOpacity style={[ styles.map, { alignItems: 'center', justifyContent: 'center' } ]} >
-            <ThemedText>Não foi possível obter a localização</ThemedText>
-          </TouchableOpacity>
-        </View>
+      <View style={[ styles.cardMaps, { borderColor: borderColor } ]}>
+        <ThemedText style={{ paddingHorizontal: 16, paddingVertical: 4 }} type="subtitle">Mapa</ThemedText>
+        <TouchableOpacity style={[ styles.map, { alignItems: 'center', justifyContent: 'center' } ]} >
+          <ThemedText>Não foi possível obter a localização</ThemedText>
+        </TouchableOpacity>
+      </View>
     )
   }
 
   if (!location) {
     return (
-        <View style={[ styles.cardMaps, { borderColor: borderColor } ]}>
-          <ThemedText style={{ paddingHorizontal: 16, paddingVertical: 4 }} type="subtitle">Mapa</ThemedText>
-          <TouchableOpacity style={[ styles.map, { alignItems: 'center', justifyContent: 'center' } ]} >
-            <ThemedText>Carregando mapa...</ThemedText>
-          </TouchableOpacity>
-        </View>
-      )
+      <View style={[ styles.cardMaps, { borderColor: borderColor } ]}>
+        <ThemedText style={{ paddingHorizontal: 16, paddingVertical: 4 }} type="subtitle">Mapa</ThemedText>
+        <TouchableOpacity style={[ styles.map, { alignItems: 'center', justifyContent: 'center' } ]} >
+          <ThemedText>Carregando mapa...</ThemedText>
+        </TouchableOpacity>
+      </View>
+    )
   }
 
   return(
     <View style={[ styles.cardMaps, { borderColor: borderColor } ]}>
       <ThemedText style={{ paddingHorizontal: 16, paddingVertical: 4 }} type="subtitle">Mapa</ThemedText>
-      <TouchableOpacity style={ styles.map } onPress={() => router.push({ pathname: '/rider/navigation-map', params: { lat: location.latitude, lng: location.longitude }})}>
+      <TouchableOpacity style={ styles.map } onPress={() => router.push({ pathname: `/${accountType}/navigation-map`, params: { lat: location.latitude, lng: location.longitude }})}>
         <Map.MapView style={ styles.map }
           styleURL={Map.StyleURL.Street}
           scaleBarEnabled={false}

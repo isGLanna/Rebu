@@ -7,8 +7,8 @@ import { useThemeColor } from '@/src/hooks/use-theme-color'
 import { Loading } from './loading'
 
 export default function Home() {
-  const [ location, setLocation ] = useState<Location.LocationObject | null>(null)
   const [ errorMsg, setErrorMsg ] = useState<string | null>(null)
+  const [ location, setLocation ] = useState<{latitude: number, longitude: number} | null>(null)
   const borderColor = useThemeColor({}, 'border')
 
   useEffect(() => {
@@ -18,11 +18,11 @@ export default function Home() {
         setErrorMsg('Permissão de localização negada')
         return
       }
-
-      let location = await Location.getCurrentPositionAsync({})
-      setLocation(location)
+      await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest }).
+        then(location => {
+          setLocation(location.coords)
+      })
     }
-
     getLocation()
   }, [])
 
@@ -34,7 +34,7 @@ export default function Home() {
 
   return (
     <ThemedView style={ styles.container }>
-      <MapView location={location?.coords} errorMsg={errorMsg} />
+      <MapView location={location} errorMsg={errorMsg} />
       <View style={[ styles.cardMaps, { borderColor: borderColor } ]}>
         <TouchableOpacity style={[ styles.map, { alignItems: 'center', justifyContent: 'center' } ]} >
           <ThemedText type='subtitle'>Criar destino</ThemedText>
