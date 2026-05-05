@@ -1,20 +1,14 @@
 import { ThemedView } from '@comp/index'
 import { StyleSheet, View } from 'react-native'
-import { useThemeColor } from '@/src/hooks/use-theme-color'
 import { TextSkeleton } from '@skeleton/text-skeleton'
 import { ImageSkeleton } from '@skeleton/image-skeleton'
 
 export const Loading = () => {
-  const borderColor = useThemeColor({}, 'border')
-
   return (
     <ThemedView style={{ flex: 1 }}>
       <View style={ styles.container }>
-        <TextSkeleton type='subtitle' style={{ width: '60%'}}/>
-  
         <ImageSkeleton style={{ maxHeight: 120, borderRadius: 16 }} />
         <ImageSkeleton style={{ maxHeight: 120, borderRadius: 16 }} />
-
       </View>
     </ThemedView>
   )
