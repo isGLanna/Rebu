@@ -11,7 +11,6 @@ import IconMD from '@expo/vector-icons/MaterialCommunityIcons'
 import { DriverListSheet } from '@/src/components/organisms/map-navigation/driver-list-sheet';
 import { Car } from '@/src/types/car';
 import { RouteInfo } from '@/src/types/trip'
-import * as Location from 'expo-location'
 
 type MapMarker = {
   key: string,
