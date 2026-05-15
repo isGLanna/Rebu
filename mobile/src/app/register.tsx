@@ -1,8 +1,9 @@
 import { View, StyleSheet, useColorScheme } from 'react-native'
-import { ThemedText, ThemedView, Input, Button } from '@comp/index'
+import { ThemedText, ThemedView, Button } from '@comp/index'
 import { useThemeColor } from '../hooks/use-theme-color'
-import { useEffect, useState} from 'react'
+import { useState } from 'react'
 import { FloatingLabel } from '@molecules/animated-floating'
+import { authenticate } from '@api/auth'
 import { Colors } from '../styles/theme'
 import { router } from 'expo-router'
 
@@ -16,6 +17,21 @@ export default function Register () {
     accountType: null,
   })
   const buttonColor = useColorScheme() === 'light' ? Colors.branding._500 : Colors.branding._600
+
+  const handleSubmit = async () => {
+    const result = await authenticate.registerUser({
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      type: user.accountType === 'passenger' ? 'passenger' : 'driver'
+    })
+
+    if (result?.status === 'success') {
+      router.push('/')
+    } else {
+      alert(result?.message || 'Erro ao criar usuário')
+    }
+  }
 
   return (
     <ThemedView style={ styles.container }>
@@ -68,7 +84,7 @@ export default function Register () {
           </View>
         </View>
 
-        <Button onPress={() => router.push('/')} type='defaultSemiBold'>
+        <Button onPress={handleSubmit} type='defaultSemiBold'>
           Criar conta
         </Button>
       </View>
