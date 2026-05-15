@@ -229,7 +229,7 @@ export default function MapView() {
 
 const styles = StyleSheet.create({
   map: { width: '100%', height: '100%' },
-  cardMaps: { width: '100%', borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
+  cardMaps: { width: '100%', overflow: 'hidden' },
   bottomRightIcon: {
     position: 'absolute',
     backgroundColor: Colors.branding._500,

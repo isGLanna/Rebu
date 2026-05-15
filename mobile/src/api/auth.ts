@@ -2,15 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { User } from '../types/user'
 import { router } from 'expo-router'
 
-const header = 'Content-Type: application/json'
-const baseUrl = 'http://localhost:3000/auth'
+const header = { "Content-Type": "application/json" }
+const baseUrl = 'http://192.168.3.82:3001'
 
-export const authorize = {
+export const authenticate = {
   async signInPassenger (user: Omit<User, 'name' | 'type'>) {
     try {
       const response = await fetch(`${baseUrl}/signin/passenger`, {
         method: 'POST',
-        headers: {header},
+        headers: header,
         body: JSON.stringify(user)
       })
 
@@ -30,7 +30,7 @@ export const authorize = {
     try {
       const response = await fetch(`${baseUrl}/signin/driver`, {
         method: 'POST',
-        headers: {header},
+        headers: header,
         body: JSON.stringify(user)
       })
 
@@ -46,39 +46,23 @@ export const authorize = {
     }
   },
 
-  async registerPassenger (user: User) {
+  async registerUser (user: User): Promise<{ status: 'success' | 'error', message: string } | undefined> {
     try {
-      const response = await fetch(`${baseUrl}/register/passenger`, {
+      const response = await fetch(`${baseUrl}/usuarios`, {
         method: 'POST',
-        headers: {header},
-        body: JSON.stringify(user)
+        headers: header,
+        body: JSON.stringify({nome: user.name, email: user.email, senha: user.password, tipo: user.type})
       })
 
       if (!response.ok) {
-        return
+        return { status: 'error', message: 'Erro ao criar usuário' }
       }
 
+      return { status: 'success', message: 'Usuário criado com sucesso' }
       // Enviar toast de sucesso
     } catch (err) {
-      return // Enviar toast de falha
-    }
-  },
-
-  async registerDriver (user: User) {
-    try {
-      const response = await fetch(`${baseUrl}/register/driver`, {
-        method: 'POST',
-        headers: {header},
-        body: JSON.stringify(user)
-      })
-
-      if (!response.ok) {
-        return
-      }
-      
-      // Enviar toast de sucesso
-    } catch (err) {
-      return // Enviar toast de falha
+      return { status: 'error', message: 'Erro ao criar usuário' }
+      // Enviar toast de falha
     }
   },
 
