@@ -11,6 +11,13 @@ async function buscarCoordenadas(endereco) {
   return dados.features[0].geometry.coordinates;
 }
 
+/*
+-> Frontend envia origem e destino como { latitude: number, longitude: number } e { latitude: number, longitude: number }[], destino  pode ser um array de pontos indicando as paradas e
+precisaria tratar para o formato da api "longitude1,latitude1;longitude2,latitude2".... Também devo implementar busca por endereço, mas inserir número de latitude e longitude
+quebrado a função "buscarCoordenadas".
+-> O controller espera um id na url, mas a rota não definiu isso, então vira uma corrida com passageiro nulo
+De resto, a aplicação tá dando certo 👍
+*/
 async function calcularRota(origem, destino) {
   const origemCoords = await buscarCoordenadas(origem);
   const destinoCoords = await buscarCoordenadas(destino);

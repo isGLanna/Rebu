@@ -4,21 +4,22 @@ import { Driver } from '../types/rider'
 import { authenticate } from './auth'
 
 const baseUrl = process.env.EXPO_BASE_URL || 'http://192.168.3.82:3001'
-const header = "'Content-Type': 'application/json'"
 
 export class TripManager {
   // enviar requisição com token de validação
   async requestRace(origin: { latitude: number, longitude: number }, waypoints: { latitude: number, longitude: number }[]): Promise<RequestRaceResponse> {
     const token = await authenticate.getToken()
     const user = await authenticate.getUser()
+    const originString = `${origin.longitude},${origin.latitude}`
+    const destinationString = waypoints.map(m => `${m.longitude},${m.latitude}`).join(';')
 
     const response = await fetch(`${baseUrl}/corridas`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
-        header
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ origem: origin, destino: waypoints })
+      body: JSON.stringify({ origem: "Universidade Federal de Viçosa, Viçosa, MG", destino: "Centro, Ponte Nova, MG" })
     })
 
     if(!response.ok) {
@@ -26,12 +27,15 @@ export class TripManager {
       return { success: false, message: 'Não foi possível solicitar a corrida' }
     }
 
+    const data = await response.json()
+    const run = data.corrida
+
     /*const data = await this.fetchDirections(origin, waypoints)
       if (!data)
         return { success: false, message: 'Não foi possível calcular a rota' }
     */
     //const response: RequestRaceResponse = { status: 'success', trip: { driver: { name: 'Joao', rating: 4.8 }, car: { make: 'Fiat', model: 'Mobi', licensePlate: 'ABC1D23', color: 'Prata' } }, cost: data.cost, geometry: data.geometry, distance: data.distance, duration: data.duration }
-    return { success: true, trip: { driver: { name: 'Joao', rating: 4.8 }, car: { make: 'Fiat', model: 'Mobi', licensePlate: 'ABC1D23', color: 'Prata' } }, cost: 15.50, geometry: null, distance: '5 km', duration: '15 min' }
+    return { success: true, trip: { driver: { name: 'Joao', rating: 4.8 }, car: { make: 'Fiat', model: 'Mobi', licensePlate: 'ABC1D23', color: 'Prata' } }, cost: Number(run.valor), geometry: run.destino, distance: run.distanciaKm, duration: run.distanciaMin }
   }
 
   async acceptRace() {
