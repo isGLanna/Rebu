@@ -3,47 +3,25 @@ import { User } from '../types/user'
 import { router } from 'expo-router'
 
 const header = { "Content-Type": "application/json" }
-const baseUrl = 'http://192.168.3.82:3001'
+const baseUrl = process.env.EXPO_BASE_URL || 'http://192.168.3.82:3001'
 
 export const authenticate = {
-  async signInPassenger (user: Omit<User, 'name' | 'type'>) {
-    try {
-      const response = await fetch(`${baseUrl}/signin/passenger`, {
+  async signIn (user: Omit<User, 'name'>): Promise<{ success: boolean, message?: string }> {
+      const response = await fetch(`${baseUrl}/login`, {
         method: 'POST',
         headers: header,
-        body: JSON.stringify(user)
+        body: JSON.stringify({email: user.email, senha: user.password, tipo: user.type})
       })
 
-      const data = await response.json()
+    const data = await response.json()
 
-      if (!response.ok || !data.token) {
-        return
-      }
-
-      await AsyncStorage.setItem('authToken', data.token)
-    } catch (err) {
-      console.error('Error signing in', err)
+    if (!response.ok || !data.token) {
+      return { success: false, message: data.message || 'Erro ao autenticar usuário' }
     }
-  },
 
-  async signInDriver (user: Omit<User, 'name' | 'type'>) {
-    try {
-      const response = await fetch(`${baseUrl}/signin/driver`, {
-        method: 'POST',
-        headers: header,
-        body: JSON.stringify(user)
-      })
-
-      const data = await response.json()
-
-      if (!response.ok || !data.token) {
-        return
-      }
-
-      await AsyncStorage.setItem('authToken', data.token)
-    } catch (err) {
-      return
-    }
+    await this.setToken(data.token)
+    await this.setUser({ id: data.userId, name: data.name, email: user.email, type: user.type })
+    return { success: true }
   },
 
   async registerUser (user: User): Promise<{ status: 'success' | 'error', message: string } | undefined> {
@@ -63,34 +41,6 @@ export const authenticate = {
     } catch (err) {
       return { status: 'error', message: 'Erro ao criar usuário' }
       // Enviar toast de falha
-    }
-  },
-
-  async signOut () {
-    try {
-      await AsyncStorage.removeItem('authToken')
-
-      router.dismissAll()
-      router.replace('/')
-    } catch (err) {
-      return null
-    }
-  },
-
-  async setToken (value: string) {
-    try {
-      await AsyncStorage.setItem('authToken', value)
-    } catch (err) {
-      return null
-    }
-  },
-
-  async getToken () {
-    try {
-      const token = await AsyncStorage.getItem('authToken')
-      return token
-    } catch (err) {
-      return null
     }
   },
 
@@ -114,5 +64,51 @@ export const authenticate = {
     } catch (err) {
       return null
     }
-  }
+  },
+
+  async signOut () {
+    try {
+      await AsyncStorage.removeItem('authToken')
+
+      router.dismissAll()
+      router.replace('/')
+    } catch (err) {
+      return null
+    }
+  },
+
+  // armazena id e outros dados do usuário conforme necessário
+  async setUser (user: { id: string, name: string, email: string, type: 'driver' | 'rider' }) {
+    try {
+      await AsyncStorage.setItem('user', JSON.stringify(user))
+    }catch (err) {
+      return null
+    }
+  },
+
+  async getUser (): Promise<{ id: string, name: string, email: string, type: 'driver' | 'rider' } | null> {
+    try {
+      const userData = await AsyncStorage.getItem('user')
+      return userData ? JSON.parse(userData) : null
+    } catch(err) {
+      return null
+    }
+  },
+
+  async setToken (value: string) {
+    try {
+      await AsyncStorage.setItem('authToken', value)
+    } catch (err) {
+      return null
+    }
+  },
+
+  async getToken () {
+    try {
+      const token = await AsyncStorage.getItem('authToken')
+      return token
+    } catch (err) {
+      return null
+    }
+  },
 }

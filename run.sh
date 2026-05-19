@@ -1,17 +1,19 @@
+#!/bin/bash
+
 echo "Iniciando backend..."
-npm run dev &
-PID_BACKEND=$!
+cd backend
+docker compose up -d
 
 echo "Iniciando frontend..."
 cd ../mobile
-npx expo start &
+npx expo run:android &  # Inicia o aplicativo para android, para executar no ios, altere o Dockerfile em CMD... run:android para :ios
 PID_FRONTEND=$!
 
 kill_process() {
-  kill $PID_BACKEND 2>/dev/null
-  kill $PID_FRONTEND 2>/dev/null
+  cd ../backend
 
-  wait $PID_BACKEND 2>/dev/null
+  docker compose down
+  kill $PID_FRONTEND 2>/dev/null
   wait $PID_FRONTEND 2>/dev/null
 
   exit 0

@@ -37,7 +37,8 @@ services:
       - "3001:3001"
     environment:
       NODE_ENV: development
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: "segredo_super_secreto"
+      ORS_API_KEY: "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImI5MjFlZWVhYjU3MDQ2ZDdiNTgwNzhlZWFmNDRkNGJjIiwiaCI6Im11cm11cjY0In0="
       
       DB_NAME: rebu
       DB_USER: postgres
