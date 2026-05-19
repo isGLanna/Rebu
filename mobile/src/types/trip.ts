@@ -5,7 +5,7 @@ export type RouteInfo = {
 }
 
 export type RequestRaceSuccess = {
-  status: 'success'
+  success: true
   trip: {
       driver: {
         name: string
@@ -21,11 +21,13 @@ export type RequestRaceSuccess = {
   cost: number
   geometry: any
   distance: string
-  duration: string
+  duration: string,
+  message?: string
 }
 
 export type RequestRaceError = {
-  status: 'error'
+  success: false
+  message?: string
 }
 
 export type RequestRaceResponse = RequestRaceSuccess | RequestRaceError
