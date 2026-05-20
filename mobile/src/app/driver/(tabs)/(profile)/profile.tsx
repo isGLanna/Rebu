@@ -16,7 +16,7 @@ export default function Profile() {
   useEffect(() => {
     const timer = setTimeout(() => {
       User.fetchUserProfile().then(profile => setUser(profile))
-    }, 2000)
+    }, 1000)
     return () => clearTimeout(timer)
   }, [])
 

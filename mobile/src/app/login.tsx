@@ -6,17 +6,46 @@ import { Colors } from '../styles/theme'
 import { router } from 'expo-router'
 import { useThemeColor } from '../hooks/use-theme-color'
 import { useColorScheme } from '../hooks/use-color-scheme'
+import { authenticate } from '../api/auth'
 
 export default function Login() {
   const formColor = useThemeColor({}, 'container')
-  const [user, setUser] = useState<{ name: string, email: string, password: string, confirmPassword: string, accountType: 'rider' | 'driver' | null}>({
-    name: '',
+  const [user, setUser] = useState<{ email: string, password: string, accountType: 'rider' | 'driver' | null}>({
     email: '',
     password: '',
-    confirmPassword: '',
     accountType: null,
   })
   const buttonColor = useColorScheme() === 'light' ? Colors.branding._500 : Colors.branding._600
+
+  async function handleSubmit() {
+    if (user.accountType === null) {
+      alert('Selecione um tipo de conta')
+      return
+    }
+
+    try {
+      const response = await authenticate.signIn({
+        email: user.email,
+        password: user.password,
+        type: user.accountType
+      })
+
+      if (!response.success) {
+        throw new Error(response.message || 'Email ou senha incorretos')
+      }
+
+      if (user.accountType === 'driver') {
+        router.push('/driver')
+        return
+      }
+
+      if (user.accountType === 'rider') {
+        router.push('/rider')
+      }
+    } catch (err) {
+      alert('Erro ao fazer login')
+    }
+  }
 
   return (
     <ThemedView style={ styles.container }>
@@ -56,16 +85,7 @@ export default function Login() {
         </View>
 
         <Button
-          onPress={() => {
-            if (user.accountType === 'driver') {
-              router.push('/driver')
-              return
-            }
-
-            if (user.accountType === 'rider') {
-              router.push('/rider')
-            }
-          }}
+          onPress={handleSubmit}
           type='defaultSemiBold'>
           Entrar
         </Button>

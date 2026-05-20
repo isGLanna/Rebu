@@ -2,7 +2,7 @@ export type User = {
   name: string
   email: string
   password: string
-  type: 'driver' | 'passenger'
+  type: 'driver' | 'rider'
 }
 
 export type UserProfile = {

@@ -1,30 +1,55 @@
 import type { RequestRaceResponse, RouteInfo } from '@/src/types/trip'
 import { Car } from '../types/car'
 import { Driver } from '../types/rider'
+import { authenticate } from './auth'
+
+const baseUrl = process.env.EXPO_BASE_URL || 'http://192.168.3.82:3001'
 
 export class TripManager {
-  static async requestRace(origin: { latitude: number, longitude: number }, waypoints: { latitude: number, longitude: number }[]): Promise<RequestRaceResponse> {
-    //const response = await fetch("nosso-backend.com/")
-    const data = await this.fetchDirections(origin, waypoints)
+  // enviar requisição com token de validação
+  async requestRace(origin: { latitude: number, longitude: number }, waypoints: { latitude: number, longitude: number }[]): Promise<RequestRaceResponse> {
+    const token = await authenticate.getToken()
+    const user = await authenticate.getUser()
+    const originString = `${origin.longitude},${origin.latitude}`
+    const destinationString = waypoints.map(m => `${m.longitude},${m.latitude}`).join(';')
+
+    const response = await fetch(`${baseUrl}/corridas`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ origem: "Universidade Federal de Viçosa, Viçosa, MG", destino: "Centro, Ponte Nova, MG" })
+    })
+
+    if(!response.ok) {
+      alert(response.status)
+      return { success: false, message: 'Não foi possível solicitar a corrida' }
+    }
+
+    const data = await response.json()
+    const run = data.corrida
+
+    /*const data = await this.fetchDirections(origin, waypoints)
       if (!data)
-        return { status: 'error' }
-      
-    const response: RequestRaceResponse = { status: 'success', trip: { driver: { name: 'Joao', rating: 4.8 }, car: { make: 'Fiat', model: 'Mobi', licensePlate: 'ABC1D23', color: 'Prata' } }, cost: data.cost, geometry: data.geometry, distance: data.distance, duration: data.duration }
-    return response
+        return { success: false, message: 'Não foi possível calcular a rota' }
+    */
+    //const response: RequestRaceResponse = { status: 'success', trip: { driver: { name: 'Joao', rating: 4.8 }, car: { make: 'Fiat', model: 'Mobi', licensePlate: 'ABC1D23', color: 'Prata' } }, cost: data.cost, geometry: data.geometry, distance: data.distance, duration: data.duration }
+    return { success: true, trip: { driver: { name: 'Joao', rating: 4.8 }, car: { make: 'Fiat', model: 'Mobi', licensePlate: 'ABC1D23', color: 'Prata' } }, cost: Number(run.valor), geometry: run.destino, distance: run.distanciaKm, duration: run.distanciaMin }
   }
 
-  static async acceptRace() {
+  async acceptRace() {
     const response = await { status: 'success', driverLocation: { latitude: -19.200520, longitude: -46.2355308 } }  // Envia localização do motorista
     return response
   }
 
-  static async cancelRace() {
+  async cancelRace() {
     const response = await { status: 'success' }
     return response
   }
 
 /* TODO: Implementar lógica de rotas no backend e consumir aqui */
-  static async fetchDirections(origin: { latitude: number, longitude: number }, waypoints: { latitude: number, longitude: number }[],) {
+  async fetchDirections(origin: { latitude: number, longitude: number }, waypoints: { latitude: number, longitude: number }[],) {
     const originString = `${origin.longitude},${origin.latitude}`
     const destinationString = waypoints.map(m => `${m.longitude},${m.latitude}`).join(';')
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${originString};${destinationString}?geometries=geojson&access_token=${process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN}`
@@ -57,13 +82,13 @@ export class TripManager {
     }
   }
 
-  static async driverPosition() {
+  async driverPosition() {
     const response = await { latitude: -19.200520, longitude: -46.2355308 }
     return response
   }
 
   // Simulador de preço
-  static calculatePrice(distance: number, duration: number): number {
+  calculatePrice(distance: number, duration: number): number {
     const base = 2.50
     const costPerKm = 1.0
     const costPerMin = 0.8
@@ -74,7 +99,7 @@ export class TripManager {
     return (base + distanceCost + durationCost)
   }
 
-  static async checkExistingRace(): Promise<{ status: string, trip: { driver: Driver; car: Car, cost: number } | null }> {
+  async checkExistingRace(): Promise<{ status: string, trip: { driver: Driver; car: Car, cost: number } | null }> {
     // Simulação de verificação de corrida existente
     const response = await { status: 'success', trip: null }
     return response

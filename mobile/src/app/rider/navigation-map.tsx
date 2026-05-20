@@ -37,9 +37,10 @@ export default function MapView() {
   const [activeTrip, setActiveTrip] = useState<{ driver: Driver, car: Car } | null>(null)
   const [selectedDriver, setSelectedDriver] = useState<{ driver: Driver, car: Car, cost: number } | null>(null)
 
+  const tripManager = useMemo(() => new TripManager(), [])
   // Verifica se há corrida existente ao montar componente
   useEffect(() => {
-    TripManager.checkExistingRace().then(response => {
+    tripManager.checkExistingRace().then(response => {
       if (response.status === 'success' && response.trip) {
         setSelectedDriver({
           driver: response.trip.driver,
@@ -80,13 +81,13 @@ export default function MapView() {
     setIsSearchingDriver(true)
     try {
       const { latitude, longitude } = changedStartingPoint ? markers[0].coords : { latitude: parseFloat(lat), longitude: parseFloat(lng) }
-      const response = await TripManager.requestRace(
+      const response = await tripManager.requestRace(
         { latitude, longitude },
         markers.map(m => m.coords)
       )
 
-      if (response.status !== 'success')
-        throw new Error('Não foi possível solicitar a corrida')
+      if (!response.success)
+        throw new Error(response.message || 'Não foi possível solicitar a corrida')
 
       setPendingTrip({
         route: { geometry: response.geometry, distance: response.distance, duration: response.duration },
@@ -110,12 +111,12 @@ export default function MapView() {
   // Solicita um novo motorista
   const handleRequestNewDriver = useCallback(async () => {
     try {
-      const response = await TripManager.requestRace(
+      const response = await tripManager.requestRace(
         { latitude: startingPoint.latitude, longitude: startingPoint.longitude },
         markers.map(m => m.coords)
       )
 
-      if (response.status !== 'success')
+      if (!response.success)
         throw new Error('Não foi possível solicitar a corrida')
 
       setActiveTrip({
@@ -140,7 +141,7 @@ export default function MapView() {
     if (!pendingTrip) return;
 
     try {
-      const response = await TripManager.acceptRace()
+      const response = await tripManager.acceptRace()
 
       if (response.status !== 'success')
         throw new Error('Não foi possível aceitar a corrida')
@@ -163,7 +164,7 @@ export default function MapView() {
     if (!isRaceAccepted || !activeTrip) return
 
     const requestDriverPosition = setInterval(() => {
-      TripManager.driverPosition().then(coordinates => {
+      tripManager.driverPosition().then(coordinates => {
         setSelectedDriver(prev => prev ? {
           ...prev, driver: {
             ...prev.driver,
@@ -229,7 +230,7 @@ export default function MapView() {
 
 const styles = StyleSheet.create({
   map: { width: '100%', height: '100%' },
-  cardMaps: { width: '100%', borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
+  cardMaps: { width: '100%', overflow: 'hidden' },
   bottomRightIcon: {
     position: 'absolute',
     backgroundColor: Colors.branding._500,

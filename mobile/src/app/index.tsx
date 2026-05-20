@@ -3,14 +3,14 @@ import { ImageBackground, StyleSheet, View, Text, Appearance } from 'react-nativ
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { LinearGradient } from 'expo-linear-gradient'
 import { useThemeColor } from '@hooks/use-theme-color'
-import { authorize } from '@api/auth'
+import { authenticate } from '@api/auth'
 import { router } from 'expo-router'
 import { useEffect } from 'react'
 
 export default function App() {
   useEffect(() => {
     const verifyAuth = async () => {
-      const role = await authorize.isAuthtenticated()
+      const role = await authenticate.isAuthtenticated()
       if (role === 'driver' || role === 'passenger') {
         router.push('/driver')
       } else if (role === 'passenger') {
