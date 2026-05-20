@@ -1,11 +1,24 @@
 const corridaService = require("../services/corridaService");
 
 async function solicitarCorrida(req, res) {
-  const { origem, destino } = req.body;
+  const { origem } = req.body;
+
+  const destino = Array.isArray(req.body.destinos)
+    ? req.body.destinos.at(-1)
+    : req.body.destino;
+
   const passageiroId = req.usuario.id;
 
+  if (req.usuario.tipo !== "passageiro") {
+    return res.status(403).json({
+      erro: "Apenas passageiros podem solicitar corridas"
+    });
+  }
+
   if (!origem || !destino) {
-    return res.status(400).json({ erro: "Origem e destino são obrigatórios" });
+    return res.status(400).json({
+      erro: "Origem e destino são obrigatórios"
+    });
   }
 
   try {
@@ -117,6 +130,12 @@ async function buscarCorridaPorId(req, res) {
 
 async function listarMinhasCorridas(req, res) {
   const passageiroId = req.usuario.id;
+
+  if (req.usuario.tipo !== "passageiro") {
+    return res.status(403).json({
+      erro: "Apenas passageiros podem listar suas corridas"
+    });
+  }
 
   try {
     const corridas = await corridaService.listarMinhasCorridas(passageiroId);

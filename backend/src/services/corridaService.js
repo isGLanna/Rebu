@@ -6,6 +6,9 @@ async function criarCorrida(passageiroId, origem, destino) {
   const rota = await routeService.calcularRota(origem, destino);
   const valor = routeService.calcularValor(rota.distanciaKm);
 
+  const origemFormatada = routeService.formatarLocalizacao(origem);
+  const destinoFormatado = routeService.formatarLocalizacao(destino);
+
   const resultado = await pool.query(
     `INSERT INTO corridas 
       (passageiro_id, origem, destino, status, valor, distancia_km, duracao_min)
@@ -13,8 +16,8 @@ async function criarCorrida(passageiroId, origem, destino) {
      RETURNING *`,
     [
       passageiroId,
-      origem,
-      destino,
+      origemFormatada,
+      destinoFormatado,
       "pendente",
       valor,
       rota.distanciaKm,

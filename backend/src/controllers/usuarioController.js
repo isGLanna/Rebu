@@ -1,13 +1,27 @@
 const jwt = require("jsonwebtoken");
 const pool = require("../db");
 
-const JWT_SECRET = "segredo_super_secreto";
+const JWT_SECRET = process.env.JWT_SECRET || "segredo_super_secreto";
+const TIPOS_VALIDOS = ["passageiro", "motorista"];
+
+function normalizarTipo(tipo) {
+  if (tipo === "driver") return "motorista";
+  if (tipo === "passenger" || tipo === "rider") return "passageiro";
+  return tipo;
+}
 
 async function cadastrarUsuario(req, res) {
-  const { nome, email, senha, tipo } = req.body;
+  const { nome, email, senha } = req.body;
+  const tipo = normalizarTipo(req.body.tipo);
 
   if (!nome || !email || !senha || !tipo) {
     return res.status(400).json({ erro: "Dados incompletos" });
+  }
+
+  if (!TIPOS_VALIDOS.includes(tipo)) {
+    return res.status(400).json({
+      erro: "Tipo de usuário inválido. Use passageiro ou motorista."
+    });
   }
 
   try {
@@ -23,12 +37,18 @@ async function cadastrarUsuario(req, res) {
 
   } catch (erro) {
     console.error(erro);
+
+    if (erro.code === "23505") {
+      return res.status(409).json({ erro: "E-mail já cadastrado" });
+    }
+
     res.status(500).json({ erro: "Erro ao cadastrar usuário" });
   }
 }
 
 async function login(req, res) {
   const { email, senha } = req.body;
+  const tipoSolicitado = normalizarTipo(req.body.tipo);
 
   if (!email || !senha) {
     return res.status(400).json({ erro: "Dados incompletos" });
@@ -50,6 +70,12 @@ async function login(req, res) {
       return res.status(401).json({ erro: "Senha incorreta" });
     }
 
+    if (tipoSolicitado && usuario.tipo !== tipoSolicitado) {
+      return res.status(403).json({
+        erro: `Esse usuário está cadastrado como ${usuario.tipo}`
+      });
+    }
+
     const token = jwt.sign(
       {
         id: usuario.id,
@@ -57,9 +83,7 @@ async function login(req, res) {
         tipo: usuario.tipo
       },
       JWT_SECRET,
-      {
-        expiresIn: "1h"
-      }
+      { expiresIn: "1h" }
     );
 
     res.json({
