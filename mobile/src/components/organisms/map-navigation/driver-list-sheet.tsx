@@ -10,7 +10,7 @@ import { Button, ThemedText } from '@comp/index'
 import { ModalScreen } from '../modal'
 
 interface DriverListSheetProps {
-  tripInfo: { driver: Driver, car: Car, cost: number }
+  tripInfo: { driver?: Driver, car?: Car, cost: number, distance: string }
   onAccept: (driver: Driver, car: Car) => void
   onCancel: () => void
   onRequestNewDriver: () => void
@@ -41,6 +41,12 @@ export function DriverListSheet({ tripInfo, onAccept, onCancel, onRequestNewDriv
     }
   }
 
+  const Loading = () => (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <ThemedText>Procurando motoristas próximos...</ThemedText>
+    </View>
+  )
+
   return (
       <>
         <BottomSheetModal
@@ -54,8 +60,20 @@ export function DriverListSheet({ tripInfo, onAccept, onCancel, onRequestNewDriv
           >
           <BottomSheetView  style={styles.header}>
             <View>
-              <ThemedText style={styles.cost}>Preço estimado: R$ {tripInfo.cost.toFixed(2)}</ThemedText>
-              <DriverCard driverName={tripInfo.driver.name} rating={tripInfo.driver.rating} car={tripInfo.car} onPress={() => setIsModalOpen(prev => !prev)} />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <ThemedText style={styles.cost}>
+                  Preço: R$ {tripInfo.cost.toFixed(2)}
+                </ThemedText>
+                <ThemedText>
+                  {tripInfo.distance} km
+                </ThemedText>
+              </View>
+              {tripInfo.driver && tripInfo.car ? (
+                <DriverCard driverName={tripInfo.driver.name} rating={tripInfo.driver.rating} car={tripInfo.car} onPress={() => setIsModalOpen(prev => !prev)} />) : (
+                <Loading />
+              )}
+
+
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
               </View>
             </View>

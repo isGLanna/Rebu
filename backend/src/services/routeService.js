@@ -25,6 +25,9 @@ async function buscarCoordenadas(endereco) {
 }
 
 async function obterCoordenadas(local) {
+  if (Array.isArray(local))
+    return Promise.all(local.map(coordenada => obterCoordenadas(coordenada)));
+
   if (ehCoordenada(local)) {
     return coordenadaParaORS(local);
   }
@@ -36,31 +39,37 @@ async function calcularRota(origem, destino) {
   const origemCoords = await obterCoordenadas(origem);
   const destinoCoords = await obterCoordenadas(destino);
 
-  const resposta = await fetch("https://api.openrouteservice.org/v2/directions/driving-car", {
+  const coordenadas = [
+    origemCoords,
+    ...(Array.isArray(destinoCoords[0]) ? destinoCoords : [destinoCoords])
+  ]
+
+  const resposta = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson", {
     method: "POST",
     headers: {
       "Authorization": process.env.ORS_API_KEY,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      coordinates: [origemCoords, destinoCoords]
+      coordinates: coordenadas
     })
   });
 
   const dados = await resposta.json();
 
-  if (!dados.routes || dados.routes.length === 0) {
+  if (!dados.features || dados.features.length === 0) {
     throw new Error("Não foi possível calcular a rota");
   }
 
-  const resumo = dados.routes[0].summary;
+  const resumo = dados.features[0].properties.summary;
 
   const distanciaKm = resumo.distance / 1000;
   const duracaoMin = resumo.duration / 60;
 
   return {
     distanciaKm: Number(distanciaKm.toFixed(2)),
-    duracaoMin: Number(duracaoMin.toFixed(2))
+    duracaoMin: Number(duracaoMin.toFixed(2)),
+    geometry: dados.features[0].geometry
   };
 }
 
@@ -72,11 +81,19 @@ function calcularValor(distanciaKm) {
 }
 
 function formatarLocalizacao(local) {
+  if (!local){
+    return local;
+  }
+
+  if (Array.isArray(local)) {
+    return local.map(ponto => formatarLocalizacao(ponto));
+  }
+
   if (ehCoordenada(local)) {
-    return JSON.stringify({
+    return {
       latitude: Number(local.latitude),
       longitude: Number(local.longitude)
-    });
+    }
   }
 
   return local;

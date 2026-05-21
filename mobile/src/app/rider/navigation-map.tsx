@@ -8,9 +8,10 @@ import { Colors } from '@/src/styles/theme'
 import { MapMarkers, DriverMarker } from '@organisms/map-navigation/index'
 import type { Driver } from '@comp/../types/rider'
 import IconMD from '@expo/vector-icons/MaterialCommunityIcons'
-import { DriverListSheet } from '@/src/components/organisms/map-navigation/driver-list-sheet';
+import { DriverListSheet } from '@organisms/map-navigation/driver-list-sheet';
 import { Car } from '@/src/types/car';
 import { RouteInfo } from '@/src/types/trip'
+import { socket } from '@service/socket'
 
 type MapMarker = {
   key: string,
@@ -23,40 +24,58 @@ type MapMarker = {
 Map.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN || '')
 
 export default function MapView() {
-  // Coordenadas e Marcadores
   const { lat, lng } = useLocalSearchParams<{ lat: string, lng: string }>()
   const [startingPoint, setStartingPoint] = useState<{ latitude: number, longitude: number }>({ latitude: parseFloat(lat), longitude: parseFloat(lng) })
   const [changedStartingPoint, setChangedStartingPoint] = useState<boolean>(false)
   const [markers, setMarkers] = useState<MapMarker[]>([])
 
-  //Controladores de estados da corrida
   const [isSearchingDriver, setIsSearchingDriver] = useState(false)
   const [isRaceAccepted, setIsRaceAccepted] = useState(false)
 
-  const [pendingTrip, setPendingTrip] = useState<{ route: RouteInfo, cost: number } | null>(null)
+  const [pendingTrip, setPendingTrip] = useState<{ route: RouteInfo, cost: number, distance: string, duration: string } | null>(null)
   const [activeTrip, setActiveTrip] = useState<{ driver: Driver, car: Car } | null>(null)
-  const [selectedDriver, setSelectedDriver] = useState<{ driver: Driver, car: Car, cost: number } | null>(null)
+  const [selectedDriver, setSelectedDriver] = useState<{ driver: Driver, car: Car } | null>(null)
 
   const tripManager = useMemo(() => new TripManager(), [])
-  // Verifica se há corrida existente ao montar componente
+
+  const waitForAvailableDriver = useCallback(() => {
+    return new Promise<{ driver: Driver, car: Car }>((resolve, reject) => {
+
+      const cleanup = () => {
+        socket.off('corrida_aceita')
+        socket.off('corrida_cancelada_pelo_sistema')
+      }
+    
+      socket.once('corrida_aceita', (driverData: { driver: Driver, car: Car }) => {
+        cleanup()
+        resolve(driverData)
+      })
+
+      // Se o usuário cancelar a busca, encerramos a promessa
+      socket.once('corrida_cancelada_pelo_sistema', () => {
+        cleanup()
+        reject(new Error('Nenhum motorista pôde aceitar no momento'))
+      })
+
+    })
+  }, [])
+
   useEffect(() => {
     tripManager.checkExistingRace().then(response => {
       if (response.status === 'success' && response.trip) {
         setSelectedDriver({
           driver: response.trip.driver,
-          car: response.trip.car,
-          cost: response.trip.cost
+          car: response.trip.car
         })
         setIsRaceAccepted(true)
       }
     })
   }, [])
 
-  // Adiciona marcadores no mapa
   const newMarker = useCallback((e: { geometry: { coordinates: number[] } }) => {
     if (markers.length >= 3 && (changedStartingPoint && markers.length >= 4)) return alert('Limite de três paradas atingido')
-
-    // Primeiro marcador defini ponto de partida, senão adiciona ponto de parada
+    if (isSearchingDriver || isRaceAccepted) return
+    
     if (markers.length === 0 && changedStartingPoint){
       setStartingPoint(({
         latitude: e.geometry.coordinates[1],
@@ -72,9 +91,8 @@ export default function MapView() {
       }
     }
     setMarkers((prev) => [...prev, newMarkerData])
-  }, [markers, changedStartingPoint, startingPoint])
+  }, [markers, changedStartingPoint, startingPoint, isSearchingDriver, isRaceAccepted])
 
-  // Solicita corrida
   const handleRequestRace = useCallback(async () => {
     if (isRaceAccepted || markers.length === 0 || (changedStartingPoint && markers.length === 1)) return
 
@@ -86,51 +104,73 @@ export default function MapView() {
         markers.map(m => m.coords)
       )
 
-      if (!response.success)
+      if (!response.success) {
         throw new Error(response.message || 'Não foi possível solicitar a corrida')
+      }
 
       setPendingTrip({
-        route: { geometry: response.geometry, distance: response.distance, duration: response.duration },
-        cost: response.cost
+        route: { geometry: response.geometry as any, distance: response.distance, duration: response.duration },
+        cost: response.cost,
+        distance: response.distance,
+        duration: response.duration
       })
+
+      const trip = await waitForAvailableDriver()
+
+      if (!trip) throw new Error('Nenhum motorista disponível no momento')
 
       setActiveTrip({
-        driver: { location: {
-          latitude: 0, longitude: 0
-        }, ...response.trip.driver },
-        car: response.trip.car
+        driver: trip.driver,
+        car: trip.car
+      })
+
+      setSelectedDriver({
+        driver: trip.driver,
+        car: trip.car,
       })
 
       setIsSearchingDriver(false)
-    } catch (error) {
+    } catch (error: any) {
       setIsSearchingDriver(false)
-      alert(error || 'Ocorreu um erro ao solicitar a corrida. Tente novamente.')
+      alert(error.message || error || 'Ocorreu um erro ao solicitar a corrida. Tente novamente.')
     }
-  }, [isRaceAccepted, markers, startingPoint, changedStartingPoint])
+  }, [isRaceAccepted, markers, startingPoint, changedStartingPoint, waitForAvailableDriver])
 
-  // Solicita um novo motorista
   const handleRequestNewDriver = useCallback(async () => {
     try {
+      setIsSearchingDriver(true)
+      setActiveTrip(null)
       const response = await tripManager.requestRace(
         { latitude: startingPoint.latitude, longitude: startingPoint.longitude },
         markers.map(m => m.coords)
       )
 
-      if (!response.success)
-        throw new Error('Não foi possível solicitar a corrida')
+      if (!response.success) {
+        throw new Error('message' in response ? response.message : 'Não foi possível solicitar a corrida')
+      }
+
+      const trip = await waitForAvailableDriver()
+
+      if (!trip) throw new Error('Nenhum motorista disponível no momento')
 
       setActiveTrip({
-        driver: { location: {
-          latitude: 0, longitude: 0 }, ...response.trip.driver },
-        car: response.trip.car
+        driver: trip.driver,
+        car: trip.car
       })
-    } catch (error) {
-      setActiveTrip(null)
-      alert(error || 'Ocorreu um erro ao solicitar um novo motorista. Tente novamente.')
-    }
-  }, [markers, startingPoint])
 
-  // Cancela a busca de motoristas
+      setSelectedDriver({
+        driver: trip.driver,
+        car: trip.car,
+      })
+
+      setIsSearchingDriver(false)
+    } catch (error: any) {
+      setActiveTrip(null)
+      setIsSearchingDriver(false)
+      alert(error.message || error || 'Ocorreu um erro ao solicitar um novo motorista. Tente novamente.')
+    }
+  }, [markers, startingPoint, waitForAvailableDriver])
+
   const handleCancelSearchRace = useCallback(() => {
     setPendingTrip(null)
     setIsSearchingDriver(false)
@@ -148,20 +188,18 @@ export default function MapView() {
 
       setSelectedDriver({
         driver: { ...driver, location: response.driverLocation },
-        car,
-        cost: pendingTrip.cost
+        car
       })
       
       setIsSearchingDriver(false)
       setIsRaceAccepted(true)
-    } catch (error) {
-      alert(error || 'Ocorreu um erro ao aceitar a corrida. Tente novamente.')
+    } catch (error: any) {
+      alert(error.message || error || 'Ocorreu um erro ao aceitar a corrida. Tente novamente.')
     }
   }, [pendingTrip])
 
-  // Solicita posição do motorista em intervalos regulares
   useEffect(() => {
-    if (!isRaceAccepted || !activeTrip) return
+    if (!activeTrip) return
 
     const requestDriverPosition = setInterval(() => {
       tripManager.driverPosition().then(coordinates => {
@@ -172,10 +210,10 @@ export default function MapView() {
           }
         } : null)
       })
-    }, 1000)
+    }, 2000)
 
     return () => clearInterval(requestDriverPosition)
-  }, [isRaceAccepted])
+  }, [activeTrip])
 
   return(
     <SafeAreaView edges={['top']} style={{ flex: 1 }}>
@@ -185,7 +223,7 @@ export default function MapView() {
             scaleBarEnabled={false}
             logoEnabled={false}
             attributionEnabled={false}
-            onPress={(isSearchingDriver || isRaceAccepted) ? undefined : newMarker}
+            onPress={newMarker}
           >
             <Map.Camera
               zoomLevel={16}
@@ -196,7 +234,7 @@ export default function MapView() {
             <Map.UserLocation requestsAlwaysUse={true} visible={true}/>
 
             {pendingTrip && (
-              <Map.ShapeSource id="routeSource" shape={pendingTrip?.route.geometry}>
+              <Map.ShapeSource id="routeSource" shape={pendingTrip?.route.geometry as any}>
                 <Map.LineLayer id="routeFill" belowLayerID="road-label" style={{ lineColor: Colors.branding._400, lineWidth: 3, lineBorderColor: Colors.branding._300 }} />
               </Map.ShapeSource>
             )}
@@ -208,8 +246,8 @@ export default function MapView() {
             <MapMarkers markers={markers} isSearchingDriver={isSearchingDriver} setMarkers={setMarkers} isStartingPoint={changedStartingPoint} />
         </Map.MapView>
 
-        {activeTrip && pendingTrip &&         // Motorista disponível para corrida
-          <DriverListSheet tripInfo={{ driver: activeTrip.driver, car: activeTrip.car, cost: pendingTrip.cost }} onAccept={handleAcceptRace} onCancel={handleCancelSearchRace} onRequestNewDriver={handleRequestNewDriver}/>
+        {pendingTrip &&
+          <DriverListSheet tripInfo={{ driver: activeTrip.driver, car: activeTrip.car, cost: pendingTrip.cost, distance: pendingTrip.distance }} onAccept={handleAcceptRace} onCancel={handleCancelSearchRace} onRequestNewDriver={handleRequestNewDriver}/>
         }
         
         <TouchableOpacity style={styles.bottomLeftIcon} activeOpacity={0.7} onPress={() => setChangedStartingPoint(prev => !prev)}>
