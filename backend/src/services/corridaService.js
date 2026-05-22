@@ -16,8 +16,8 @@ async function criarCorrida(passageiroId, origem, destino) {
      RETURNING *`,
     [
       passageiroId,
-      origemFormatada,
-      destinoFormatado,
+      JSON.stringify(origemFormatada),
+      JSON.stringify(destinoFormatado),
       "pendente",
       valor,
       rota.distanciaKm,
@@ -26,6 +26,12 @@ async function criarCorrida(passageiroId, origem, destino) {
   );
 
   const corrida = resultado.rows[0];
+
+  if (corrida) {
+    corrida.origem = JSON.parse(corrida.origem);
+    corrida.destino = JSON.parse(corrida.destino);
+    corrida.geometry = rota.geometry;
+  }
 
   await redisClient.set(`corrida:${corrida.id}`, JSON.stringify(corrida));
   await redisClient.sAdd("corridas_pendentes", String(corrida.id));

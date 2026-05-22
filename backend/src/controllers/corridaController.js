@@ -3,9 +3,8 @@ const corridaService = require("../services/corridaService");
 async function solicitarCorrida(req, res) {
   const { origem } = req.body;
 
-  const destino = Array.isArray(req.body.destinos)
-    ? req.body.destinos.at(-1)
-    : req.body.destino;
+  // Permite array de paradas intermediárias
+  const destino = req.body.destinos
 
   const passageiroId = req.usuario.id;
 
@@ -109,6 +108,7 @@ async function buscarCorridaPorId(req, res) {
       passageiro_id: corrida.passageiro_id,
       origem: corrida.origem,
       destino: corrida.destino,
+      geometry: corrida.geometry,
       status: corrida.status,
       valor: corrida.valor,
       distancia_km: corrida.distancia_km,

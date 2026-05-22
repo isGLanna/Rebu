@@ -1,0 +1,20 @@
+services:
+  mobile:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "19000:19000"
+      - "19001:19001"
+      - "8081:8081"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      NODE_ENV: development
+      ANDROID_HOME: /usr/local/android-sdk
+      EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN: pk.eyJ1IjoiZ2lvcmRhbm9sYW5uYSIsImEiOiJjbW8wdDV2NTcwYzlwMnhveTVja3htdTRzIn0.hNzDdxjqav0FBkeRIsag0w
+      REBU_BACKEND_URL: http://192.168.3.82:3001
+    tty: true
+#   command: npx expo start --host tunnel   # Funcionalidades externas do react-native podem não funcionar
+# Parece funcionar, mas não surgiu resposta interativa do metro bundler, então confunde se o processo está executando conforme esperado

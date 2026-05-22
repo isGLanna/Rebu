@@ -15,7 +15,8 @@
       "@hooks/*": ["./src/hooks/*"],
       "@assets/*": ["./src/assets/*"],
       "@types/*": ["./src/types/*"],
-      "@skeleton/*": ["./src/components/atoms/skeleton/*"]
+      "@skeleton/*": ["./src/components/atoms/skeleton/*"],
+      "@service/*": ["./service/*"]
     }
   },
   "include": [
