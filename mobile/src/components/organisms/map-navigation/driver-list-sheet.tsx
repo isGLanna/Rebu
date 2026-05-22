@@ -10,11 +10,19 @@ import { Button, ThemedText } from '@comp/index'
 import { ModalScreen } from '../modal'
 
 interface DriverListSheetProps {
-  tripInfo: { driver?: Driver, car?: Car, cost: number, distance: string }
+  tripInfo: { driver: Driver | undefined, car: Car | undefined, cost: number, distance: string }
   onAccept: (driver: Driver, car: Car) => void
   onCancel: () => void
   onRequestNewDriver: () => void
 }
+
+/*  Painel Deslizante (BottomSheet)
+
+O passageiro solicita uma corrida e, enquanto o sistema aguarda por motoristas aceitarem, um painel deslizante (BottomSheet) exibe informações que independem do motorista:
+- Preço estimado da corrida
+- Distância estimada
+- Duração estimada
+*/ 
 
 export function DriverListSheet({ tripInfo, onAccept, onCancel, onRequestNewDriver }: DriverListSheetProps) {
   const modalRef = useRef<BottomSheetModal>(null)
@@ -81,18 +89,17 @@ export function DriverListSheet({ tripInfo, onAccept, onCancel, onRequestNewDriv
           </BottomSheetView>
         </BottomSheetModal>
 
-        {isModalOpen && (
+        {isModalOpen && tripInfo.driver && tripInfo.car && (
           <ModalScreen title="Deseja continuar com a corrida?">
             <View style={{ flexDirection: 'row', gap: 16 }}>
               <Button onPress={onCancel}>Cancelar</Button>
               <Button  onPress={() => {
-                handleAccept(tripInfo.driver, tripInfo.car)
+                handleAccept(tripInfo.driver!, tripInfo.car!)
                 setIsModalOpen(prev => !prev)
                 }}>
                 Confirmar
               </Button>
             </View>
-
           </ModalScreen>
         )}
       </>

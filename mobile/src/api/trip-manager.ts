@@ -45,9 +45,14 @@ export class TripManager {
     return response
   }
 
-  async checkExistingRace(): Promise<{ status: string, trip: { driver: Driver; car: Car, cost: number } | null }> {
+  /**
+   * Verifica se há uma corrida existente para o usuário, ativa, aceita ou pendente.
+   * Retorna status da corrida e, se houver uma corrida recentemente ativa, informa dados do motorista
+   * @returns Promise<{ status: string, driverData: {driver: Driver; car: Car} | null }>
+  */
+  async checkExistingRace(): Promise<{ status: string, driverData: {driver: Driver; car: Car} | null }> {
     // Simulação de verificação de corrida existente
-    const response = await { status: 'success', trip: null }
+    const response = await { status: 'success', driverData: null }
     return response
   }
 }

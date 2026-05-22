@@ -1,6 +1,6 @@
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Map from '@rnmapbox/maps'
 import { TripManager } from '@api/trip-manager'
 import { useLocalSearchParams } from 'expo-router'
@@ -37,35 +37,47 @@ export default function MapView() {
   const [selectedDriver, setSelectedDriver] = useState<{ driver: Driver, car: Car } | null>(null)
 
   const tripManager = useMemo(() => new TripManager(), [])
+  const appState = useRef(AppState.currentState)
 
+  // TODO: implementar um busy waiting para aguardar resposta do servidor
   const waitForAvailableDriver = useCallback(() => {
-    return new Promise<{ driver: Driver, car: Car }>((resolve, reject) => {
+      return new Promise<{ driver: Driver, car: Car }>((resolve, reject) => {
+        const cleanup = () => {
+          socket.off('active')
+          socket.off('driver_assigned')
+          socket.off('cancelled')
+        }
+      
+        socket.once('active', (driverData: { driver: Driver, car: Car }) => {
+          cleanup()
+          resolve(driverData)
+        })
 
-      const cleanup = () => {
-        socket.off('corrida_aceita')
-        socket.off('corrida_cancelada_pelo_sistema')
-      }
-    
-      socket.once('corrida_aceita', (driverData: { driver: Driver, car: Car }) => {
-        cleanup()
-        resolve(driverData)
+        // Se o usuário cancelar a busca encerra-se a promise
+        socket.once('cancelled', () => {
+          cleanup()
+          reject(new Error('Nenhum motorista pôde aceitar no momento'))
+        })
+        
+        // EM BACKEGROUND
+        if (appState.current === 'background') {
+          let pollingInterval = setInterval(() => {
+            tripManager.checkExistingRace().then(response => {
+              if (response.status === 'success' && response.driverData)
+                resolve(response.driverData)
+            })
+          }, 2000)
+        }
       })
+  }, [ appState.current ])
 
-      // Se o usuário cancelar a busca, encerramos a promessa
-      socket.once('corrida_cancelada_pelo_sistema', () => {
-        cleanup()
-        reject(new Error('Nenhum motorista pôde aceitar no momento'))
-      })
-
-    })
-  }, [])
-
+  // Verifica estados de corrida ao montar componente
   useEffect(() => {
     tripManager.checkExistingRace().then(response => {
-      if (response.status === 'success' && response.trip) {
+      if (response.status === 'success' && response.driverData) {
         setSelectedDriver({
-          driver: response.trip.driver,
-          car: response.trip.car
+          driver: response.driverData.driver,
+          car: response.driverData.car,
         })
         setIsRaceAccepted(true)
       }
@@ -247,7 +259,7 @@ export default function MapView() {
         </Map.MapView>
 
         {pendingTrip &&
-          <DriverListSheet tripInfo={{ driver: activeTrip.driver, car: activeTrip.car, cost: pendingTrip.cost, distance: pendingTrip.distance }} onAccept={handleAcceptRace} onCancel={handleCancelSearchRace} onRequestNewDriver={handleRequestNewDriver}/>
+          <DriverListSheet tripInfo={{ driver: activeTrip?.driver, car: activeTrip?.car, cost: pendingTrip.cost, distance: pendingTrip.distance }} onAccept={handleAcceptRace} onCancel={handleCancelSearchRace} onRequestNewDriver={handleRequestNewDriver}/>
         }
         
         <TouchableOpacity style={styles.bottomLeftIcon} activeOpacity={0.7} onPress={() => setChangedStartingPoint(prev => !prev)}>
