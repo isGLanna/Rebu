@@ -51,7 +51,7 @@ export default function MapView() {
       }
     }
     setMarkers((prev) => [...prev, newMarkerData])
-  }, [markers, changedStartingPoint, startingPoint, tripState])
+  }, [markers, changedStartingPoint, tripState])
 
   const requestRace = useCallback(async () => {
     // Impede corridas duplicadas, sem pontos ou mudanças no ponto de partida sem querer
@@ -80,7 +80,7 @@ export default function MapView() {
       setTripState('idle')
       alert((error as Error).message || error || 'Ocorreu um erro ao solicitar a corrida. Tente novamente')
     }
-  }, [markers, startingPoint, changedStartingPoint, tripState])
+  }, [markers, changedStartingPoint, tripState])
 
   const requestNewDriver = useCallback(async () => {
     try {
@@ -101,7 +101,6 @@ export default function MapView() {
   }, [markers, startingPoint])
 
   const cancelSearchRace = useCallback(async () => {
-    // TODO: solicita o backend para retirar da fila do redis
     try {
       if (!tripData.tripId) throw new Error('Nenhuma corrida ativa para cancelar')
 
@@ -115,9 +114,13 @@ export default function MapView() {
       
     } catch (error: unknown) {
       alert((error as Error).message || error || 'Não foi possível cancelar a corrida')
+    } finally {
+      // TODO: enquanto não emplementado no backend, manter cancelamento automático
+      setTripState('idle')
+      setTripRequest(null)
     }
 
-  }, [])
+  }, [tripData])
 
 
   const acceptRace = useCallback(async () => {
@@ -168,19 +171,20 @@ export default function MapView() {
         </Map.MapView>
 
         {tripRequest &&
-          <DriverListSheet tripInfo={{ driver: tripData.driver, car: tripData.car, cost: tripRequest.cost, distance: tripRequest.distance }} onAccept={acceptRace} onCancel={cancelSearchRace} onRequestNewDriver={requestNewDriver}/>
+          <DriverListSheet tripInfo={{ driver: tripData.driver, car: tripData.car, cost: tripRequest.cost, distance: tripRequest.distance, duration: tripRequest.duration }} onAccept={acceptRace} onCancel={cancelSearchRace} onRequestNewDriver={requestNewDriver}/>
         }
-        
-        <TouchableOpacity style={styles.bottomLeftIcon} activeOpacity={0.7} onPress={() => setChangedStartingPoint(prev => !prev)}>
-          {changedStartingPoint ?
-            <IconMD name='pin' size={32} color='#fff' /> :
-            <IconMD name='pin-outline' size={32} color='#fff' />}
-        </TouchableOpacity>
 
         {(tripState === 'idle') && // Exibe botão de solicitar corrida apenas qunado não houver corrida ativa ou solicitada
+        <>
+          <TouchableOpacity style={styles.bottomLeftIcon} activeOpacity={0.7} onPress={() => setChangedStartingPoint(prev => !prev)}>
+            {changedStartingPoint ?
+              <IconMD name='pin' size={32} color='#fff' /> :
+              <IconMD name='pin-outline' size={32} color='#fff' />}
+          </TouchableOpacity>
           <TouchableOpacity style={styles.bottomRightIcon} activeOpacity={0.7} onPress={requestRace}>
             <IconMD name="car-arrow-right" size={32} color='#fff' />
           </TouchableOpacity>
+        </>
         }
       </View>
     </SafeAreaView>

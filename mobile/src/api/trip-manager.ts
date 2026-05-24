@@ -60,8 +60,9 @@ export class TripManager {
         'Content-Type': 'application/json'
       }
     })
+    return { status: 'success', tripId: null, state: 'idle', racingData: null }
 
-    return {
+    /*return {
       status: 'success',
       tripId: '12345',
       state: 'match',
@@ -83,7 +84,7 @@ export class TripManager {
         rider: { name: 'Maria' },
         eta: 5
       },
-    }
+    }*/
   }
 }
 
