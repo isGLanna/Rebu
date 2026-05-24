@@ -16,7 +16,7 @@
       "@assets/*": ["./src/assets/*"],
       "@types/*": ["./src/types/*"],
       "@skeleton/*": ["./src/components/atoms/skeleton/*"],
-      "@service/*": ["./service/*"]
+      "@service/*": ["./src/services/*"],
     }
   },
   "include": [
