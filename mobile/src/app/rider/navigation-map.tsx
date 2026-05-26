@@ -1,16 +1,15 @@
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import Map from '@rnmapbox/maps'
 import { TripManager } from '@api/trip-manager'
 import { useLocalSearchParams } from 'expo-router'
 import { Colors } from '@/src/styles/theme'
 import { MapMarkers, DriverMarker } from '@organisms/map-navigation/index'
-import type { Driver } from '@comp/../types/rider'
+import type { Driver, Vehicle, RouteInfo } from '@/src/types'
 import IconMD from '@expo/vector-icons/MaterialCommunityIcons'
-import { DriverListSheet } from '@/src/components/organisms/map-navigation/driver-list-sheet';
-import { Car } from '@/src/types/car';
-import { RouteInfo } from '@/src/types/trip'
+import { DriverListSheet } from '@organisms/map-navigation/driver-list-sheet'
+import { useTripMachine } from '@hooks/use-ride-match'
+import Map from '@rnmapbox/maps'
 
 type MapMarker = {
   key: string,
@@ -23,40 +22,20 @@ type MapMarker = {
 Map.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN || '')
 
 export default function MapView() {
-  // Coordenadas e Marcadores
   const { lat, lng } = useLocalSearchParams<{ lat: string, lng: string }>()
   const [startingPoint, setStartingPoint] = useState<{ latitude: number, longitude: number }>({ latitude: parseFloat(lat), longitude: parseFloat(lng) })
   const [changedStartingPoint, setChangedStartingPoint] = useState<boolean>(false)
   const [markers, setMarkers] = useState<MapMarker[]>([])
 
-  //Controladores de estados da corrida
-  const [isSearchingDriver, setIsSearchingDriver] = useState(false)
-  const [isRaceAccepted, setIsRaceAccepted] = useState(false)
-
-  const [pendingTrip, setPendingTrip] = useState<{ route: RouteInfo, cost: number } | null>(null)
-  const [activeTrip, setActiveTrip] = useState<{ driver: Driver, car: Car } | null>(null)
-  const [selectedDriver, setSelectedDriver] = useState<{ driver: Driver, car: Car, cost: number } | null>(null)
+  const [tripRequest, setTripRequest] = useState<{ route: RouteInfo, cost: number, distance: string, duration: string } | null>(null)
 
   const tripManager = useMemo(() => new TripManager(), [])
-  // Verifica se há corrida existente ao montar componente
-  useEffect(() => {
-    tripManager.checkExistingRace().then(response => {
-      if (response.status === 'success' && response.trip) {
-        setSelectedDriver({
-          driver: response.trip.driver,
-          car: response.trip.car,
-          cost: response.trip.cost
-        })
-        setIsRaceAccepted(true)
-      }
-    })
-  }, [])
+  const { tripState, tripData, setTripState } = useTripMachine()
 
-  // Adiciona marcadores no mapa
   const newMarker = useCallback((e: { geometry: { coordinates: number[] } }) => {
     if (markers.length >= 3 && (changedStartingPoint && markers.length >= 4)) return alert('Limite de três paradas atingido')
-
-    // Primeiro marcador defini ponto de partida, senão adiciona ponto de parada
+    if (tripState !== 'idle') return
+    
     if (markers.length === 0 && changedStartingPoint){
       setStartingPoint(({
         latitude: e.geometry.coordinates[1],
@@ -72,110 +51,93 @@ export default function MapView() {
       }
     }
     setMarkers((prev) => [...prev, newMarkerData])
-  }, [markers, changedStartingPoint, startingPoint])
+  }, [markers, changedStartingPoint, tripState])
 
-  // Solicita corrida
-  const handleRequestRace = useCallback(async () => {
-    if (isRaceAccepted || markers.length === 0 || (changedStartingPoint && markers.length === 1)) return
+  const requestRace = useCallback(async () => {
+    // Impede corridas duplicadas, sem pontos ou mudanças no ponto de partida sem querer
+    if (tripState !== 'idle' || markers.length === 0 || (changedStartingPoint && markers.length === 1)) return
 
-    setIsSearchingDriver(true)
     try {
+      setTripState('request')
       const { latitude, longitude } = changedStartingPoint ? markers[0].coords : { latitude: parseFloat(lat), longitude: parseFloat(lng) }
       const response = await tripManager.requestRace(
         { latitude, longitude },
         markers.map(m => m.coords)
       )
 
-      if (!response.success)
+      if (!response.success) {
         throw new Error(response.message || 'Não foi possível solicitar a corrida')
+      }
 
-      setPendingTrip({
-        route: { geometry: response.geometry, distance: response.distance, duration: response.duration },
-        cost: response.cost
+      setTripRequest({
+        route: { geometry: response.geometry as any, distance: response.distance, duration: response.duration },
+        cost: response.cost,
+        distance: response.distance,
+        duration: response.duration
       })
 
-      setActiveTrip({
-        driver: { location: {
-          latitude: 0, longitude: 0
-        }, ...response.trip.driver },
-        car: response.trip.car
-      })
-
-      setIsSearchingDriver(false)
-    } catch (error) {
-      setIsSearchingDriver(false)
-      alert(error || 'Ocorreu um erro ao solicitar a corrida. Tente novamente.')
+    } catch (error: unknown) {
+      setTripState('idle')
+      alert((error as Error).message || error || 'Ocorreu um erro ao solicitar a corrida. Tente novamente')
     }
-  }, [isRaceAccepted, markers, startingPoint, changedStartingPoint])
+  }, [markers, changedStartingPoint, tripState])
 
-  // Solicita um novo motorista
-  const handleRequestNewDriver = useCallback(async () => {
+  const requestNewDriver = useCallback(async () => {
     try {
+      setTripState('request')
       const response = await tripManager.requestRace(
         { latitude: startingPoint.latitude, longitude: startingPoint.longitude },
         markers.map(m => m.coords)
       )
 
-      if (!response.success)
-        throw new Error('Não foi possível solicitar a corrida')
+      if (!response.success) {
+        throw new Error('message' in response ? response.message : 'Não foi possível solicitar a corrida')
+      }
 
-      setActiveTrip({
-        driver: { location: {
-          latitude: 0, longitude: 0 }, ...response.trip.driver },
-        car: response.trip.car
-      })
-    } catch (error) {
-      setActiveTrip(null)
-      alert(error || 'Ocorreu um erro ao solicitar um novo motorista. Tente novamente.')
+    } catch (error: any) {
+      setTripState('idle')
+      alert(error.message || error || 'Ocorreu um erro ao solicitar um novo motorista. Tente novamente')
     }
   }, [markers, startingPoint])
 
-  // Cancela a busca de motoristas
-  const handleCancelSearchRace = useCallback(() => {
-    setPendingTrip(null)
-    setIsSearchingDriver(false)
-  }, [])
+  const cancelSearchRace = useCallback(async () => {
+    try {
+      if (!tripData.tripId) throw new Error('Nenhuma corrida ativa para cancelar')
+
+      const response = await tripManager.cancelRace(tripData.tripId)
+
+      if (response.status !== 200)
+        throw new Error('Não foi possível cancelar a corrida')
+
+      setTripState('idle')
+      setTripRequest(null)
+      
+    } catch (error: unknown) {
+      alert((error as Error).message || error || 'Não foi possível cancelar a corrida')
+    } finally {
+      // TODO: enquanto não emplementado no backend, manter cancelamento automático
+      setTripState('idle')
+      setTripRequest(null)
+    }
+
+  }, [tripData])
 
 
-  const handleAcceptRace = useCallback(async (driver: Omit<Driver, 'location'>, car: Car) => {
-    if (!pendingTrip) return;
+  const acceptRace = useCallback(async () => {
+    if (!tripRequest) return;
 
     try {
+      setTripState('confirm')
       const response = await tripManager.acceptRace()
 
       if (response.status !== 'success')
         throw new Error('Não foi possível aceitar a corrida')
-
-      setSelectedDriver({
-        driver: { ...driver, location: response.driverLocation },
-        car,
-        cost: pendingTrip.cost
-      })
       
-      setIsSearchingDriver(false)
-      setIsRaceAccepted(true)
-    } catch (error) {
-      alert(error || 'Ocorreu um erro ao aceitar a corrida. Tente novamente.')
+    } catch (error: unknown) {
+      setTripState('match')
+      alert((error as Error).message || error || 'Ocorreu um erro ao aceitar a corrida. Tente novamente')
     }
-  }, [pendingTrip])
-
-  // Solicita posição do motorista em intervalos regulares
-  useEffect(() => {
-    if (!isRaceAccepted || !activeTrip) return
-
-    const requestDriverPosition = setInterval(() => {
-      tripManager.driverPosition().then(coordinates => {
-        setSelectedDriver(prev => prev ? {
-          ...prev, driver: {
-            ...prev.driver,
-            location: coordinates
-          }
-        } : null)
-      })
-    }, 1000)
-
-    return () => clearInterval(requestDriverPosition)
-  }, [isRaceAccepted])
+  }, [tripRequest])
 
   return(
     <SafeAreaView edges={['top']} style={{ flex: 1 }}>
@@ -185,7 +147,7 @@ export default function MapView() {
             scaleBarEnabled={false}
             logoEnabled={false}
             attributionEnabled={false}
-            onPress={(isSearchingDriver || isRaceAccepted) ? undefined : newMarker}
+            onPress={newMarker}
           >
             <Map.Camera
               zoomLevel={16}
@@ -195,33 +157,34 @@ export default function MapView() {
             />
             <Map.UserLocation requestsAlwaysUse={true} visible={true}/>
 
-            {pendingTrip && (
-              <Map.ShapeSource id="routeSource" shape={pendingTrip?.route.geometry}>
+            {tripRequest && ( // Exibe a rota para destino após solicitar corrida
+              <Map.ShapeSource id="routeSource" shape={tripRequest?.route.geometry}>
                 <Map.LineLayer id="routeFill" belowLayerID="road-label" style={{ lineColor: Colors.branding._400, lineWidth: 3, lineBorderColor: Colors.branding._300 }} />
               </Map.ShapeSource>
             )}
 
-            {selectedDriver?.driver.location && (
-              <DriverMarker localization={selectedDriver.driver.location} />
+            {tripData?.driver?.location && (    // Quando houver motorista designado, exibe localização do motorista
+              <DriverMarker localization={tripData?.driver?.location} />
             )}
 
-            <MapMarkers markers={markers} isSearchingDriver={isSearchingDriver} setMarkers={setMarkers} isStartingPoint={changedStartingPoint} />
+            <MapMarkers markers={markers} isSearchingDriver={tripState === 'request'} setMarkers={setMarkers} isStartingPoint={changedStartingPoint} />
         </Map.MapView>
 
-        {activeTrip && pendingTrip &&         // Motorista disponível para corrida
-          <DriverListSheet tripInfo={{ driver: activeTrip.driver, car: activeTrip.car, cost: pendingTrip.cost }} onAccept={handleAcceptRace} onCancel={handleCancelSearchRace} onRequestNewDriver={handleRequestNewDriver}/>
+        {tripRequest &&
+          <DriverListSheet tripInfo={{ driver: tripData.driver, car: tripData.car, cost: tripRequest.cost, distance: tripRequest.distance, duration: tripRequest.duration }} onAccept={acceptRace} onCancel={cancelSearchRace} onRequestNewDriver={requestNewDriver}/>
         }
-        
-        <TouchableOpacity style={styles.bottomLeftIcon} activeOpacity={0.7} onPress={() => setChangedStartingPoint(prev => !prev)}>
-          {changedStartingPoint ?
-            <IconMD name='pin' size={32} color='#fff' /> :
-            <IconMD name='pin-outline' size={32} color='#fff' />}
-        </TouchableOpacity>
 
-        {(!isSearchingDriver && !isRaceAccepted) &&
-          <TouchableOpacity style={styles.bottomRightIcon} activeOpacity={0.7} onPress={handleRequestRace}>
+        {(tripState === 'idle') && // Exibe botão de solicitar corrida apenas qunado não houver corrida ativa ou solicitada
+        <>
+          <TouchableOpacity style={styles.bottomLeftIcon} activeOpacity={0.7} onPress={() => setChangedStartingPoint(prev => !prev)}>
+            {changedStartingPoint ?
+              <IconMD name='pin' size={32} color='#fff' /> :
+              <IconMD name='pin-outline' size={32} color='#fff' />}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.bottomRightIcon} activeOpacity={0.7} onPress={requestRace}>
             <IconMD name="car-arrow-right" size={32} color='#fff' />
           </TouchableOpacity>
+        </>
         }
       </View>
     </SafeAreaView>

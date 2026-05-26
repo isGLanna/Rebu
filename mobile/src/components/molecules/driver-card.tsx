@@ -1,6 +1,6 @@
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native'
 import { ThemedText } from '@comp/index'
-import { Car } from '@/src/types/car'
+import { Car } from '@/src/types/vehicle'
 import { Colors } from '@/src/styles/theme'
 
 interface DriverCard {

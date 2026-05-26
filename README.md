@@ -25,8 +25,10 @@ EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN='pk.eyJ1IjoiZ2lvcmRhbm9sYW5uYSIsImEiOiJjbW8wdDV2
     docker compose up
 
     cd ../mobile
-    docker compose up
+    npx expo run:(android/ios)
    ```
+
+Devido a conflitos de versões por várias ferramentas (jdk, android_sdk, node) e configuração de variáveis de ambiente, não serpa garantido o funcionamento do docker para o frontend.
 
 ## Seção 2: Executar projeto
 
@@ -52,18 +54,31 @@ No diretório do Frontend execute:
 
   ```bash
     npx expo start
-  ```
-
-  ```bash
     w
   ```
 
 ### Frontend - Mobile
 
-Desbloqueie o modo de desenvolvimento no celular e permita a depuração por USB ou Wifi. Após isso, execute o comando inserindo o seu sitema operacional (android/ios). Ao finalizar, abrirá o aplicativo automaticamente, caso não apareça, aperte 'a' ou 'i' para executar os comandos do Expo abrir em android ou ios.
+Desbloqueie o modo de desenvolvimento no celular e permita a depuração por USB ou Wifi. Para conexão por Wifi, pareie os dois dispositivos:
+
+-Selecione depuração por Wifi e use "Parear o dispositivo com um código de pareamento
+-Use o endereço IP e porta no código abaixo para criar uma conexão confiável:
 
   ```bash
-    npx expo run:{Sistema Operacional}
+    adb pair IP:PORTA
+  ```
+
+-Insira o código
+-Faça a conexão com o IP e portas real do dispositivo (Endereço IP e Porta):
+
+  ```bash
+    adb connect IP:PORTA
+  ```
+
+ Após isso, execute o comando ajustando COMMAND dentro de docker-compose.yaml para o seu sistema operacional (android/ios). Ao finalizar, abrirá o aplicativo automaticamente, caso não apareça, aperte 'a' ou 'i' para executar os comandos do Expo abrir em android ou ios.
+
+  ```bash
+    docker compose up
   ```
 
 ## Seção 3:

@@ -1,3 +1,6 @@
+import { Driver } from "./driver"
+import { Vehicle } from "./vehicle"
+
 export type RouteInfo = {
   geometry: any;
   distance: string;
@@ -28,6 +31,13 @@ export type RequestRaceSuccess = {
 export type RequestRaceError = {
   success: false
   message?: string
+}
+
+export type Race = {
+  driver: Driver
+  car: Vehicle
+  rider: { name: string }
+  eta: number
 }
 
 export type RequestRaceResponse = RequestRaceSuccess | RequestRaceError

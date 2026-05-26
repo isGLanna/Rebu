@@ -9,7 +9,7 @@ import { router } from 'expo-router'
 
 export default function Register () {
   const formColor = useThemeColor({}, 'container')
-  const [user, setUser] = useState<{ name: string, email: string, password: string, confirmPassword: string, accountType: 'passenger' | 'driver' | null}>({
+  const [user, setUser] = useState<{ name: string, email: string, password: string, confirmPassword: string, accountType: 'rider' | 'driver' | null}>({
     name: '',
     email: '',
     password: '',
@@ -23,7 +23,7 @@ export default function Register () {
       name: user.name,
       email: user.email,
       password: user.password,
-      type: user.accountType === 'passenger' ? 'passenger' : 'driver'
+      type: user.accountType === 'rider' ? 'rider' : 'driver'
     })
 
     if (result?.status === 'success') {
@@ -70,8 +70,8 @@ export default function Register () {
           <ThemedText style={{ paddingHorizontal: 8 }}>Tipo de conta</ThemedText>
           <View style={{ flexDirection: 'row', gap: 32, justifyContent: 'center', alignItems: 'center' }}>
             <Button
-              style={ user.accountType === 'passenger' ? { backgroundColor: buttonColor, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4 } : {}}
-              onPress={() => setUser(prev => ({...prev, accountType: 'passenger'}))}
+              style={ user.accountType === 'rider' ? { backgroundColor: buttonColor, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4 } : {}}
+              onPress={() => setUser(prev => ({...prev, accountType: 'rider'}))}
               type='normal'>
                 Passageiro
               </Button>
