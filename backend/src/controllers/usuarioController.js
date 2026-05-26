@@ -1,57 +1,102 @@
+const pool = require("../config/db");
 const jwt = require("jsonwebtoken");
-const pool = require("../db");
 
-const JWT_SECRET = process.env.JWT_SECRET || "segredo_super_secreto";
-const TIPOS_VALIDOS = ["passageiro", "motorista"];
-
-function normalizarTipo(tipo) {
-  if (tipo === "driver") return "motorista";
-  if (tipo === "passenger" || tipo === "rider") return "passageiro";
-  return tipo;
-}
-
-async function cadastrarUsuario(req, res) {
-  const { nome, email, senha } = req.body;
-  const tipo = normalizarTipo(req.body.tipo);
+// Cria um novo usuário
+async function criarUsuario(req, res) {
+  const { nome, email, senha, tipo } = req.body;
 
   if (!nome || !email || !senha || !tipo) {
-    return res.status(400).json({ erro: "Dados incompletos" });
+    return res.status(400).json({
+      erro: "Nome, email, senha e tipo são obrigatórios."
+    });
   }
 
-  if (!TIPOS_VALIDOS.includes(tipo)) {
+  if (tipo !== "passageiro" && tipo !== "motorista") {
     return res.status(400).json({
-      erro: "Tipo de usuário inválido. Use passageiro ou motorista."
+      erro: "Tipo deve ser 'passageiro' ou 'motorista'."
     });
   }
 
   try {
     const resultado = await pool.query(
-      "INSERT INTO usuarios (nome, email, senha, tipo) VALUES ($1, $2, $3, $4) RETURNING id, nome, email, tipo",
+      `INSERT INTO usuarios (nome, email, senha, tipo)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, nome, email, tipo`,
       [nome, email, senha, tipo]
     );
 
-    res.status(201).json({
-      mensagem: "Usuário cadastrado com sucesso",
+    return res.status(201).json({
+      mensagem: "Usuário criado com sucesso.",
       usuario: resultado.rows[0]
     });
 
   } catch (erro) {
     console.error(erro);
-
-    if (erro.code === "23505") {
-      return res.status(409).json({ erro: "E-mail já cadastrado" });
-    }
-
-    res.status(500).json({ erro: "Erro ao cadastrar usuário" });
+    return res.status(500).json({
+      erro: "Erro ao criar usuário."
+    });
   }
 }
 
-async function login(req, res) {
+// Lista todos os usuários
+async function listarUsuarios(req, res) {
+  try {
+    const resultado = await pool.query(
+      "SELECT id, nome, email, tipo FROM usuarios ORDER BY id"
+    );
+
+    return res.json(resultado.rows);
+
+  } catch (erro) {
+    console.error(erro);
+    return res.status(500).json({
+      erro: "Erro ao listar usuários."
+    });
+  }
+}
+
+// Lista apenas motoristas
+async function listarMotoristas(req, res) {
+  try {
+    const resultado = await pool.query(
+      "SELECT id, nome, email, tipo FROM usuarios WHERE tipo = 'motorista' ORDER BY id"
+    );
+
+    return res.json(resultado.rows);
+
+  } catch (erro) {
+    console.error(erro);
+    return res.status(500).json({
+      erro: "Erro ao listar motoristas."
+    });
+  }
+}
+
+// Lista apenas passageiros
+async function listarPassageiros(req, res) {
+  try {
+    const resultado = await pool.query(
+      "SELECT id, nome, email, tipo FROM usuarios WHERE tipo = 'passageiro' ORDER BY id"
+    );
+
+    return res.json(resultado.rows);
+
+  } catch (erro) {
+    console.error(erro);
+    return res.status(500).json({
+      erro: "Erro ao listar passageiros."
+    });
+  }
+}
+
+// Login com geração de token
+async function loginUsuario(req, res) {
   const { email, senha } = req.body;
-  const tipoSolicitado = normalizarTipo(req.body.tipo);
 
   if (!email || !senha) {
-    return res.status(400).json({ erro: "Dados incompletos" });
+    return res.status(400).json({
+      erro: "Email e senha são obrigatórios."
+    });
   }
 
   try {
@@ -61,33 +106,34 @@ async function login(req, res) {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({ erro: "Usuário não encontrado" });
+      return res.status(401).json({
+        erro: "Email ou senha inválidos."
+      });
     }
 
     const usuario = resultado.rows[0];
 
     if (usuario.senha !== senha) {
-      return res.status(401).json({ erro: "Senha incorreta" });
-    }
-
-    if (tipoSolicitado && usuario.tipo !== tipoSolicitado) {
-      return res.status(403).json({
-        erro: `Esse usuário está cadastrado como ${usuario.tipo}`
+      return res.status(401).json({
+        erro: "Email ou senha inválidos."
       });
     }
 
     const token = jwt.sign(
       {
         id: usuario.id,
+        nome: usuario.nome,
         email: usuario.email,
         tipo: usuario.tipo
       },
-      JWT_SECRET,
-      { expiresIn: "1h" }
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "2h"
+      }
     );
 
-    res.json({
-      mensagem: "Login realizado com sucesso",
+    return res.status(200).json({
+      mensagem: "Login realizado com sucesso.",
       token,
       usuario: {
         id: usuario.id,
@@ -99,11 +145,100 @@ async function login(req, res) {
 
   } catch (erro) {
     console.error(erro);
-    res.status(500).json({ erro: "Erro no login" });
+    return res.status(500).json({
+      erro: "Erro ao realizar login."
+    });
+  }
+}
+
+// Atualiza dados de motorista
+async function atualizarMotorista(req, res) {
+  const { id } = req.params;
+  const { nome, email, senha } = req.body;
+
+  try {
+    const motoristaExiste = await pool.query(
+      "SELECT * FROM usuarios WHERE id = $1 AND tipo = 'motorista'",
+      [id]
+    );
+
+    if (motoristaExiste.rows.length === 0) {
+      return res.status(404).json({
+        erro: "Motorista não encontrado."
+      });
+    }
+
+    const resultado = await pool.query(
+      `UPDATE usuarios
+       SET nome = COALESCE($1, nome),
+           email = COALESCE($2, email),
+           senha = COALESCE($3, senha)
+       WHERE id = $4
+       RETURNING id, nome, email, tipo`,
+      [nome, email, senha, id]
+    );
+
+    return res.json({
+      mensagem: "Motorista atualizado com sucesso.",
+      motorista: resultado.rows[0]
+    });
+
+  } catch (erro) {
+    console.error(erro);
+    return res.status(500).json({
+      erro: "Erro ao atualizar motorista."
+    });
+  }
+}
+
+// Remove motorista
+async function deletarMotorista(req, res) {
+  const { id } = req.params;
+
+  try {
+    const motoristaExiste = await pool.query(
+      "SELECT * FROM usuarios WHERE id = $1 AND tipo = 'motorista'",
+      [id]
+    );
+
+    if (motoristaExiste.rows.length === 0) {
+      return res.status(404).json({
+        erro: "Motorista não encontrado."
+      });
+    }
+
+    // Remove vínculo do motorista com corridas antigas
+    await pool.query(
+      `UPDATE corridas
+       SET motorista_id = NULL
+       WHERE motorista_id = $1`,
+      [id]
+    );
+
+    // Remove o motorista
+    await pool.query(
+      "DELETE FROM usuarios WHERE id = $1 AND tipo = 'motorista'",
+      [id]
+    );
+
+    return res.json({
+      mensagem: "Motorista deletado com sucesso."
+    });
+
+  } catch (erro) {
+    console.error(erro);
+    return res.status(500).json({
+      erro: "Erro ao deletar motorista."
+    });
   }
 }
 
 module.exports = {
-  cadastrarUsuario,
-  login
+  criarUsuario,
+  listarUsuarios,
+  listarMotoristas,
+  listarPassageiros,
+  loginUsuario,
+  atualizarMotorista,
+  deletarMotorista
 };
