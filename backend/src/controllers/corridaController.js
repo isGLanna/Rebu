@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const { buscarRota } = require("../services/routeService");
 
 // Limite máximo de corridas na fila antes de considerar congestionamento
 const LIMITE_FILA = 3;
@@ -26,7 +27,6 @@ async function solicitarCorrida(req, res) {
     destino_lat !== undefined &&
     destino_lng !== undefined;
 
-  // Exige que exista passageiro e pelo menos um formato válido
   if (!passageiro_id || (!temTexto && !temCoordenadas)) {
     return res.status(400).json({
       erro: "Informe origem/destino em texto ou coordenadas completas."
@@ -47,6 +47,26 @@ async function solicitarCorrida(req, res) {
       });
     }
 
+    // Define origem/destino finais
+    const origemFinal = origem || `${origem_lat},${origem_lng}`;
+    const destinoFinal = destino || `${destino_lat},${destino_lng}`;
+
+    let rotaCoordenadas = null;
+
+    // Se vierem coordenadas, busca a rota real na OpenRouteService
+    if (temCoordenadas) {
+      rotaCoordenadas = await buscarRota(
+        {
+          latitude: origem_lat,
+          longitude: origem_lng
+        },
+        {
+          latitude: destino_lat,
+          longitude: destino_lng
+        }
+      );
+    }
+
     // Conta quantas corridas existem na fila
     const fila = await pool.query(
       `SELECT COUNT(*) FROM fila_corridas`
@@ -56,10 +76,6 @@ async function solicitarCorrida(req, res) {
 
     // Define se o sistema está congestionado
     const servicoCongestionado = quantidadeNaFila >= LIMITE_FILA;
-
-    // Define origem/destino finais
-    const origemFinal = origem || `${origem_lat},${origem_lng}`;
-    const destinoFinal = destino || `${destino_lat},${destino_lng}`;
 
     // Se estiver congestionado, envia direto para fila
     if (servicoCongestionado) {
@@ -100,7 +116,8 @@ async function solicitarCorrida(req, res) {
       return res.status(201).json({
         mensagem: "Serviço congestionado. Corrida enviada para fila local.",
         politica_overflow: `fila_corridas >= ${LIMITE_FILA}`,
-        corrida: corridaPendente.rows[0]
+        corrida: corridaPendente.rows[0],
+        rota: rotaCoordenadas
       });
     }
 
@@ -154,7 +171,8 @@ async function solicitarCorrida(req, res) {
 
       return res.status(201).json({
         mensagem: "Corrida criada com motorista atribuído.",
-        corrida: corrida.rows[0]
+        corrida: corrida.rows[0],
+        rota: rotaCoordenadas
       });
     }
 
@@ -195,7 +213,8 @@ async function solicitarCorrida(req, res) {
 
     return res.status(201).json({
       mensagem: "Nenhum motorista disponível. Corrida enviada para fila.",
-      corrida: corridaPendente.rows[0]
+      corrida: corridaPendente.rows[0],
+      rota: rotaCoordenadas
     });
 
   } catch (erro) {
