@@ -1,0 +1,57 @@
+services:
+  redis:
+    image: redis:8
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 3
+
+  database:
+    image: postgres:18
+    container_name: rebu-db
+    environment:
+      POSTGRES_DB: rebu
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "food"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./src/database/migrations/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 3
+  
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rebu-backend
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      JWT_SECRET: "segredo_rebu"
+      ORS_API_KEY: "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImI5MjFlZWVhYjU3MDQ2ZDdiNTgwNzhlZWFmNDRkNGJjIiwiaCI6Im11cm11cjY0In0="
+      
+      DB_NAME: rebu
+      DB_USER: postgres
+      DB_PASSWORD: "food"
+      DB_HOST: database
+      DB_PORT: 5432
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    command: npm run dev
