@@ -1,0 +1,8 @@
+scrape_configs:
+  - jobs_name: "backend_rebu"
+    scrape_interval: 5s
+    metrics_path: "/probe"
+    static_configs:
+      - targets: ['192.168.3.10:']
+    relabel_configs:
+      

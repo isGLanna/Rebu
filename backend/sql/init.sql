@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS usuarios (
-  id SERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_v7_uuid(),
   nome VARCHAR(100),
   email VARCHAR(100) UNIQUE,
   senha VARCHAR(100),
@@ -8,9 +8,9 @@ CREATE TABLE IF NOT EXISTS usuarios (
 );
 
 CREATE TABLE IF NOT EXISTS corridas (
-  id SERIAL PRIMARY KEY,
-  passageiro_id INTEGER REFERENCES usuarios(id),
-  motorista_id INTEGER REFERENCES usuarios(id),
+  id UUID PRIMARY KEY DEFAULT gen_v7_uuid(),
+  passageiro_id UUID REFERENCES usuarios(id),
+  motorista_id UUID REFERENCES usuarios(id),
   origem VARCHAR(255) NOT NULL,
   destino VARCHAR(255) NOT NULL,
   status VARCHAR(50) DEFAULT 'request',
@@ -26,8 +26,8 @@ CREATE TABLE IF NOT EXISTS corridas (
 );
 
 CREATE TABLE IF NOT EXISTS fila_corridas (
-  id SERIAL PRIMARY KEY,
-  corrida_id INTEGER REFERENCES corridas(id),
+  id UUID PRIMARY KEY DEFAULT gen_v7_uuid(),
+  corrida_id UUID REFERENCES corridas(id),
   motivo TEXT,
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
