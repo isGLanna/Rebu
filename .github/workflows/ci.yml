@@ -12,15 +12,15 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: food
-          POSTGRES_DB: App_rebu
+          POSTGRES_DB: rebu
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U postgres -d App_rebu"
+          --health-cmd="pg_isready -U postgres -d rebu"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
@@ -31,7 +31,7 @@ jobs:
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: food
-      DB_NAME: App_rebu
+      DB_NAME: rebu
       JWT_SECRET: segredo_rebu
 
     steps:
@@ -47,7 +47,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Criar tabelas no banco
-        run: PGPASSWORD=food psql -h localhost -U postgres -d App_rebu -f backend/sql/init.sql
+        run: PGPASSWORD=food psql -h localhost -U postgres -d rebu -f backend/sql/init.sql
 
       - name: Instalar dependências
         working-directory: ./backend
