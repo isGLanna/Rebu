@@ -4,44 +4,57 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       retries: 3
+
     restart: unless-stopped
 
   database:
     image: postgres:18
     container_name: rebu-db
+
     environment:
       POSTGRES_DB: rebu
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: "food"
+
     ports:
       - "5432:5432"
+
     volumes:
-      - ./sql/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       retries: 3
+
     restart: unless-stopped
-  
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: rebu-backend
+
     volumes:
       - .:/app
       - /app/node_modules
+
     ports:
       - "3001:3001"
+
     environment:
       NODE_ENV: development
+
       JWT_SECRET: "segredo_rebu"
-      ORS_API_KEY: "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImI5MjFlZWVhYjU3MDQ2ZDdiNTgwNzhlZWFmNDRkNGJjIiwiaCI6Im11cm11cjY0In0="
-      
+
+      ORS_API_KEY: "SUA_CHAVE_AQUI"
+
       DB_NAME: rebu
       DB_USER: postgres
       DB_PASSWORD: "food"
@@ -50,14 +63,27 @@ services:
 
       REDIS_HOST: redis
       REDIS_PORT: 6379
+
     depends_on:
       database:
         condition: service_healthy
+
       redis:
         condition: service_healthy
+
     restart: unless-stopped
+
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 5s
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3001/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 10s
       retries: 3
+      start_period: 20s
+
     command: npm run dev

@@ -3,6 +3,7 @@ const cors = require("cors");
 
 const usuarioRoutes = require("./routes/usuarioRoutes");
 const corridaRoutes = require("./routes/corridaRoutes");
+const { healthCheck } = require("./controllers/healthController");
 
 const app = express();
 
@@ -18,6 +19,9 @@ app.get("/", (req, res) => {
     mensagem: "Backend Rebu rodando!"
   });
 });
+
+// Health Check
+app.get("/health", healthCheck);
 
 // Rotas de usuários
 app.use("/usuarios", usuarioRoutes);
