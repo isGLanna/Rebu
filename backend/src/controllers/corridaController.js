@@ -1,10 +1,9 @@
 const pool = require("../config/db");
 const { buscarRota } = require("../services/routeService");
+const { registrarEvento } = require("../utils/auditLogger");
 
-// Limite máximo de corridas na fila antes de considerar congestionamento
 const LIMITE_FILA = 3;
 
-// Solicita uma nova corrida
 async function solicitarCorrida(req, res) {
   const { passageiro_id } = req.params;
 
@@ -17,10 +16,8 @@ async function solicitarCorrida(req, res) {
     destino_lng
   } = req.body;
 
-  // Verifica se foi enviado origem/destino por texto
   const temTexto = origem && destino;
 
-  // Verifica se foi enviado origem/destino por coordenadas
   const temCoordenadas =
     origem_lat !== undefined &&
     origem_lng !== undefined &&
@@ -34,7 +31,6 @@ async function solicitarCorrida(req, res) {
   }
 
   try {
-    // Verifica se o passageiro existe
     const passageiro = await pool.query(
       `SELECT * FROM usuarios
        WHERE id = $1 AND tipo = 'passageiro'`,
@@ -47,13 +43,11 @@ async function solicitarCorrida(req, res) {
       });
     }
 
-    // Define origem/destino finais
     const origemFinal = origem || `${origem_lat},${origem_lng}`;
     const destinoFinal = destino || `${destino_lat},${destino_lng}`;
 
     let rotaCoordenadas = null;
 
-    // Se vierem coordenadas, busca a rota real na OpenRouteService
     if (temCoordenadas) {
       rotaCoordenadas = await buscarRota(
         {
@@ -67,17 +61,13 @@ async function solicitarCorrida(req, res) {
       );
     }
 
-    // Conta quantas corridas existem na fila
     const fila = await pool.query(
       `SELECT COUNT(*) FROM fila_corridas`
     );
 
     const quantidadeNaFila = Number(fila.rows[0].count);
-
-    // Define se o sistema está congestionado
     const servicoCongestionado = quantidadeNaFila >= LIMITE_FILA;
 
-    // Se estiver congestionado, envia direto para fila
     if (servicoCongestionado) {
       const corridaPendente = await pool.query(
         `INSERT INTO corridas (
@@ -113,6 +103,17 @@ async function solicitarCorrida(req, res) {
         ]
       );
 
+      await registrarEvento(
+        corridaPendente.rows[0].id,
+        "ride_queued",
+        {
+          estadoAnterior: null,
+          estadoNovo: "request",
+          motivo: "Serviço congestionado: fila local atingiu o limite"
+        },
+        "WARN"
+      );
+
       return res.status(201).json({
         mensagem: "Serviço congestionado. Corrida enviada para fila local.",
         politica_overflow: `fila_corridas >= ${LIMITE_FILA}`,
@@ -121,7 +122,6 @@ async function solicitarCorrida(req, res) {
       });
     }
 
-    // Busca apenas motoristas disponíveis
     const motoristaDisponivel = await pool.query(
       `SELECT * FROM usuarios
        WHERE tipo = 'motorista'
@@ -129,11 +129,9 @@ async function solicitarCorrida(req, res) {
        LIMIT 1`
     );
 
-    // Se encontrou motorista
     if (motoristaDisponivel.rows.length > 0) {
       const motoristaId = motoristaDisponivel.rows[0].id;
 
-      // Marca motorista como ocupado
       await pool.query(
         `UPDATE usuarios
          SET disponivel = FALSE
@@ -141,7 +139,6 @@ async function solicitarCorrida(req, res) {
         [motoristaId]
       );
 
-      // Cria corrida já em match
       const corrida = await pool.query(
         `INSERT INTO corridas (
           passageiro_id,
@@ -169,6 +166,16 @@ async function solicitarCorrida(req, res) {
         ]
       );
 
+      await registrarEvento(
+        corrida.rows[0].id,
+        "ride_matched",
+        {
+          estadoAnterior: "request",
+          estadoNovo: "match",
+          motoristaId
+        }
+      );
+
       return res.status(201).json({
         mensagem: "Corrida criada com motorista atribuído.",
         corrida: corrida.rows[0],
@@ -176,7 +183,6 @@ async function solicitarCorrida(req, res) {
       });
     }
 
-    // Se não encontrou motorista, envia para fila
     const corridaPendente = await pool.query(
       `INSERT INTO corridas (
         passageiro_id,
@@ -211,6 +217,17 @@ async function solicitarCorrida(req, res) {
       ]
     );
 
+    await registrarEvento(
+      corridaPendente.rows[0].id,
+      "ride_queued",
+      {
+        estadoAnterior: null,
+        estadoNovo: "request",
+        motivo: "Sem motoristas disponíveis"
+      },
+      "WARN"
+    );
+
     return res.status(201).json({
       mensagem: "Nenhum motorista disponível. Corrida enviada para fila.",
       corrida: corridaPendente.rows[0],
@@ -225,7 +242,6 @@ async function solicitarCorrida(req, res) {
   }
 }
 
-// Lista todas as corridas
 async function listarCorridas(req, res) {
   try {
     const resultado = await pool.query(
@@ -242,7 +258,6 @@ async function listarCorridas(req, res) {
   }
 }
 
-// Busca corrida específica
 async function buscarCorridaPorId(req, res) {
   const { corrida_id } = req.params;
 
@@ -268,7 +283,6 @@ async function buscarCorridaPorId(req, res) {
   }
 }
 
-// Função genérica de mudança de estado
 async function atualizarStatusCorrida(req, res, statusAtualEsperado, novoStatus) {
   const { corrida_id } = req.params;
 
@@ -302,6 +316,15 @@ async function atualizarStatusCorrida(req, res, statusAtualEsperado, novoStatus)
       [novoStatus, corrida_id]
     );
 
+    await registrarEvento(
+      corrida_id,
+      `ride_${novoStatus}`,
+      {
+        estadoAnterior: statusAtualEsperado,
+        estadoNovo: novoStatus
+      }
+    );
+
     return res.json({
       mensagem: `Status alterado para ${novoStatus}.`,
       corrida: atualizada.rows[0]
@@ -315,17 +338,14 @@ async function atualizarStatusCorrida(req, res, statusAtualEsperado, novoStatus)
   }
 }
 
-// Match -> Confirm
 async function confirmarCorrida(req, res) {
   return atualizarStatusCorrida(req, res, "match", "confirm");
 }
 
-// Confirm -> In Transit
 async function iniciarCorrida(req, res) {
   return atualizarStatusCorrida(req, res, "confirm", "in_transit");
 }
 
-// In Transit -> Complete + libera motorista
 async function finalizarCorrida(req, res) {
   const { corrida_id } = req.params;
 
@@ -359,7 +379,15 @@ async function finalizarCorrida(req, res) {
       [corrida_id]
     );
 
-    // Libera o motorista
+    await registrarEvento(
+      corrida_id,
+      "ride_completed",
+      {
+        estadoAnterior: "in_transit",
+        estadoNovo: "complete"
+      }
+    );
+
     if (corrida.motorista_id) {
       await pool.query(
         `UPDATE usuarios
@@ -382,7 +410,6 @@ async function finalizarCorrida(req, res) {
   }
 }
 
-// Lista fila de corridas
 async function listarFilaCorridas(req, res) {
   try {
     const resultado = await pool.query(
