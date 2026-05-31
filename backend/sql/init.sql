@@ -1,7 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS usuarios (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nome VARCHAR(100),
   email VARCHAR(100) UNIQUE,
   senha VARCHAR(100),
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 );
 
 CREATE TABLE IF NOT EXISTS corridas (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   passageiro_id UUID REFERENCES usuarios(id),
   motorista_id UUID REFERENCES usuarios(id),
 
@@ -33,8 +33,28 @@ CREATE TABLE IF NOT EXISTS corridas (
 );
 
 CREATE TABLE IF NOT EXISTS fila_corridas (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   corrida_id UUID REFERENCES corridas(id),
   motivo TEXT,
+  tipo_fila VARCHAR(20) DEFAULT 'entrada',
+  status VARCHAR(50) DEFAULT 'aguardando_processamento',
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS fila_entrada_corridas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  corrida_id UUID REFERENCES corridas(id),
+  origem_service_id VARCHAR(100),
+  motivo TEXT,
+  status VARCHAR(50) DEFAULT 'aguardando_processamento',
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS fila_saida_corridas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  corrida_id UUID REFERENCES corridas(id),
+  destino_service_id VARCHAR(100),
+  motivo TEXT,
+  status VARCHAR(50) DEFAULT 'aguardando_delegacao',
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

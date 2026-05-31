@@ -27,7 +27,12 @@ services:
       - "5432:5432"
 
     volumes:
+      # Volume persistente do PostgreSQL
+      - postgres_data:/var/lib/postgresql
+
+      # Script de inicialização do banco
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -85,4 +90,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 20s
+
     command: npm run dev
+
+volumes:
+  postgres_data:
