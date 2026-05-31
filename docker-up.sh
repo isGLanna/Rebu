@@ -3,5 +3,7 @@
 cd ./backend
 docker compose up --no-start
 cd ../mobile
-npm install
+docker compose up --no-start
 cd ..
+
+# Apenas prepara os containers

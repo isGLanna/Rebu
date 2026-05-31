@@ -31,4 +31,4 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
 
   my_application_exporter:
-    image: 
+    image: my_application_exporter:latest
