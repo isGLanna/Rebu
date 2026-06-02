@@ -527,7 +527,7 @@ async function reprocessarFila(req, res) {
     const corridasPendentes = await pool.query(
       `SELECT *
        FROM fila_corridas
-       WHERE criada_em <= NOW() - INTERVAL '10 minutes'`
+       WHERE criado_em <= NOW() - INTERVAL '10 minutes'`
     );
 
     let quantidadeReprocessada = 0;

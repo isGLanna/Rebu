@@ -19,12 +19,8 @@ async function buscarRota(origem, destino) {
       }
     );
 
-    // A OpenRouteService retorna coordenadas em formato GeoJSON:
-    // [longitude, latitude]
     const coordenadasGeoJSON = resposta.data.features[0].geometry.coordinates;
 
-    // O mapa do front geralmente usa:
-    // { latitude, longitude }
     const coordenadasFormatadas = coordenadasGeoJSON.map(
       ([longitude, latitude]) => ({
         latitude,
@@ -35,9 +31,12 @@ async function buscarRota(origem, destino) {
     return coordenadasFormatadas;
 
   } catch (erro) {
-    console.error("Erro ao buscar rota na OpenRouteService:", erro.response?.data || erro.message);
+    console.warn(
+      "[WARN] Não foi possível buscar rota na OpenRouteService:",
+      erro.response?.data || erro.message
+    );
 
-    throw new Error("Erro ao buscar rota.");
+    return null;
   }
 }
 

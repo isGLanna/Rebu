@@ -1,9 +1,8 @@
-version: "3.8"
-
 services:
   redis:
     image: redis:8
     container_name: redis
+
     ports:
       - "6379:6379"
 
@@ -19,18 +18,15 @@ services:
     container_name: rebu-db
 
     environment:
-      POSTGRES_DB: rebu
+      POSTGRES_DB: App_rebu
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: "food"
 
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
     volumes:
-      # Volume persistente do PostgreSQL
       - postgres_data:/var/lib/postgresql
-
-      # Script de inicialização do banco
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
 
     healthcheck:
@@ -61,7 +57,7 @@ services:
 
       ORS_API_KEY: "SUA_CHAVE_AQUI"
 
-      DB_NAME: rebu
+      DB_NAME: App_rebu
       DB_USER: postgres
       DB_PASSWORD: "food"
       DB_HOST: database
