@@ -6,7 +6,7 @@ docker compose up -d
 
 echo "Iniciando frontend..."
 cd ../mobile
-npx expo run:android &  # Inicia o aplicativo para android, para executar no ios, altere o Dockerfile em CMD... run:android para :ios
+docker compose up -d
 PID_FRONTEND=$!
 
 kill_process() {

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-echo "0 - Instalar dependências e executar o projeto"
-echo "1 - Instalar dependências"
+echo "0 - Prepara containers e executa o projeto"
+echo "1 - Prepara containers"
 echo "2 - Executar o projeto"
 read option
 
