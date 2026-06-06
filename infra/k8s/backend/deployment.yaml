@@ -1,19 +1,30 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: myapp
+  name: rebu-backend-deployment
 spec:
   selector:
     matchLabels:
-      app: myapp
+      app: rebu-backend
   template:
     metadata:
       labels:
-        app: myapp
+        app: rebu-backend
+      annotations:                                                              # Anotação para expor os endpoints ao Prometheus
+        prometheus.io/scrape: "true"
     spec:
+      restartPolicy: Always                                                     # Define politica para reiniciar o container em caso de falha
+
       containers:
-      - name: myapp
-        image: <Image>
+      - name: rebu-backend
+        image: rebu-backend:v1
+        imagePullPolicy: IfNotPresent
+        
+        ports:
+          - containerPort: 3001
+            #hostPort: 3001
+            protocol: TCP
+
         resources:
           requests:
             memory: "128Mi"
@@ -21,15 +32,35 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
-        ports:
-        - containerPort: 3001
+
+        livenessProbe:                                                          # Configuração para verificação da saúde do container
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+
         env:
-        - name: NODE_ENV
-          value: "production"
-        - name: CLAMAV_HOST
-          value: "clamav"
-        - name: CLAMAV_PORT
-          value: "3310"
-        - name: CLAMAV_TIMEOUT
-          value: "5000"
-        - name: 
+        - name: JWT_SECRET
+          value: "segredo_rebu"
+        - name: ORS_API_KEY
+          value: eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImI5MjFlZWVhYjU3MDQ2ZDdiNTgwNzhlZWFmNDRkNGJjIiwiaCI6Im11cm11cjY0In0=
+
+        - name: DB_HOST
+          value: "database-service"
+        - name: DB_NAME
+          value: "rebu_db"
+        - name: DB_USER
+          value: "postgres"
+        - name: DB_PASSWORD
+          value: "food"
+        - name: DB_PORT
+          value: "5432"
+
+        - name: REDIS_HOST
+          value: "redis"
+        - name: REDIS_PORT
+          value: "6379"

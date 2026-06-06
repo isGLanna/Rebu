@@ -6,6 +6,9 @@ services:
     ports:
       - "6379:6379"
 
+    volumes:
+      - redis-data:/data
+
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -37,6 +40,7 @@ services:
     restart: unless-stopped
 
   backend:
+    image: rebu-backend:v1
     build:
       context: .
       dockerfile: Dockerfile
@@ -50,12 +54,15 @@ services:
     ports:
       - "3001:3001"
 
+    env_file:
+      - .env
+
     environment:
       NODE_ENV: development
 
       JWT_SECRET: "segredo_rebu"
 
-      ORS_API_KEY: "SUA_CHAVE_AQUI"
+      ORS_API_KEY: ${ORS_API_KEY}       # <<-- Lembrar de declarar no .env
 
       DB_NAME: App_rebu
       DB_USER: postgres

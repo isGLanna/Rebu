@@ -25,5 +25,9 @@
     "jest": "^30.0.0",
     "nodemon": "^3.1.14",
     "supertest": "^7.0.0"
+  },
+  "compilerOptions": {
+    "target": "ES6",
+    "experimentalDecorators": true
   }
 }
