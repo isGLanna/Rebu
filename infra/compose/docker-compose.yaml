@@ -1,0 +1,21 @@
+version: '3'
+
+networks:
+  proxy:
+    driver: bridge
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - 80:80
+    networks:
+      - proxy
+# Agora aponta para o outro serviço que irão responder pela porta principal
+    depends_on:
+      - backend
+  
+  backend:
+    build: .
+    networks:
+      - proxy

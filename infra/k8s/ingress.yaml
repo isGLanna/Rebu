@@ -6,10 +6,15 @@ metadata:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/load-balance: "round_robin"
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/service-upstream: "true"
+    nginx.ingress.kubernetes.io/proxy-next-upstream: "error timeout invalid_header http_500 http_502 http_503 http_504"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "5s"
+  # nginx.ingress.kubernetes.io/limit-rpm: "200"                                caso algum dia deseje limitar o número de requisições
 spec:
   ingressClassName: nginx
   rules:
-    - http:
+    - host: rebu.com.io
+      http:
         paths:
         - path: /
           pathType: Prefix
