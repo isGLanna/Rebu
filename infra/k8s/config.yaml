@@ -9,9 +9,9 @@ nodes:
       kubeletExtraArgs:
         node-labels: "my-label=true"
   extraPortMappings:
-  - containerPort: 443
-    hostPort: 433
-    protocol: TCP
-  - containerPort: 3001
-    hostPort: 3001
-    protocol: TCP
+    - containerPort: 443
+      hostPort: 443
+      protocol: TCP
+    - containerPort: 80
+      hostPort: 80
+      protocol: TCP
