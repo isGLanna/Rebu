@@ -1,7 +1,7 @@
 const pool = require("../config/db");
 const { tick } = require("./lamportClock");
 
-const SERVICE_ID = "rebu";
+const SERVICE_ID = process.env.SERVICE_ID || "rebu";
 
 async function registrarEvento(
   corridaId,
@@ -29,15 +29,17 @@ async function registrarEvento(
       service_id,
       logical_timestamp,
       wall_clock_time,
+      level,
       payload
     )
-    VALUES ($1, $2, $3, $4, $5, $6)`,
+    VALUES ($1, $2, $3, $4, $5, $6, $7)`,
     [
       corridaId,
       eventType,
       SERVICE_ID,
       logicalTimestamp,
       evento.wallClockTime,
+      level,
       payload
     ]
   );

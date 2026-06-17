@@ -8,21 +8,21 @@ const pool = require("../config/db")
  * @param {*} descriptor: é um objeto que contém informações sobre a função decorada, a função original é interpretada como parâmetro(callback) e é possível acessar os argumentos e manipulá-los antes ou depois da execução
  * @returns generic type: o decorador retorna o mesmo tipo contido pela função, portanto, o tipo de retorno da própria função decorada é mantida.
  */
-export function transaction(target, propertyKey, descriptor) {
+function transaction(target, propertyKey, descriptor) {
   const callback = descriptor.value
 
   descriptor.value = async function (...args) {
     const client = await pool.connect()
     try {
-      client.query("BEGIN")
+      await client.query("BEGIN")
 
       const result = await callback.apply(this, args)
 
-      client.query("COMMIT")
+      await client.query("COMMIT")
 
       return result
     } catch (error) {
-      client.query("ROLLBACK")
+      await client.query("ROLLBACK")
       throw error
     } finally {
       client.release()
@@ -30,4 +30,8 @@ export function transaction(target, propertyKey, descriptor) {
   }
 
   return descriptor
+}
+
+module.exports = {
+  transaction
 }

@@ -58,3 +58,30 @@ CREATE TABLE IF NOT EXISTS fila_saida_corridas (
   status VARCHAR(50) DEFAULT 'aguardando_delegacao',
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE corridas
+ADD COLUMN IF NOT EXISTS logical_timestamp INTEGER DEFAULT 0;
+
+ALTER TABLE corridas
+ADD COLUMN IF NOT EXISTS core_ride_uuid UUID;
+
+ALTER TABLE corridas
+ADD COLUMN IF NOT EXISTS assigned_service_id VARCHAR(100);
+
+ALTER TABLE corridas
+ADD COLUMN IF NOT EXISTS lock_held_by VARCHAR(100);
+
+ALTER TABLE corridas
+ADD COLUMN IF NOT EXISTS lock_expires_at TIMESTAMP;
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  corrida_id UUID REFERENCES corridas(id),
+  event_type VARCHAR(100) NOT NULL,
+  service_id VARCHAR(100) NOT NULL,
+  logical_timestamp INTEGER NOT NULL,
+  wall_clock_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  level VARCHAR(20) DEFAULT 'INFO',
+  payload JSONB DEFAULT '{}'::jsonb,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

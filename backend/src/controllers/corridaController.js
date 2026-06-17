@@ -1,9 +1,253 @@
 const pool = require("../config/db");
 const { buscarRota } = require("../services/routeService");
 const { registrarEvento } = require("../utils/auditLogger");
+const {
+  adicionarNaFilaRedis,
+  removerDaFilaRedis
+} = require("../services/queueRedisService");
 
 // Limite máximo de corridas na fila antes de considerar congestionamento
 const LIMITE_FILA = 3;
+
+// Tempo para finalizar a corrida automaticamente
+const TEMPO_FINALIZACAO_MS = 30000;
+
+// Processa automaticamente a próxima corrida da fila local ou da fila de entrada do Core
+async function processarProximaCorridaDaFila(motoristaId) {
+  try {
+    // Primeiro tenta buscar corrida da fila local
+    let filaOrigem = "local";
+
+    let proximaFila = await pool.query(
+      `SELECT f.id AS fila_id,
+              f.corrida_id,
+              c.*
+       FROM fila_corridas f
+       JOIN corridas c ON c.id = f.corrida_id
+       WHERE c.status = 'request'
+       ORDER BY f.criado_em ASC
+       LIMIT 1`
+    );
+
+    // Se não tiver corrida local, tenta buscar corrida recebida do Core
+    if (proximaFila.rows.length === 0) {
+      filaOrigem = "entrada_core";
+
+      proximaFila = await pool.query(
+        `SELECT f.id AS fila_id,
+                f.corrida_id,
+                c.*
+         FROM fila_entrada_corridas f
+         JOIN corridas c ON c.id = f.corrida_id
+         WHERE c.status = 'request'
+         ORDER BY f.criado_em ASC
+         LIMIT 1`
+      );
+    }
+
+    // Se não houver nenhuma corrida em fila, motorista fica disponível
+    if (proximaFila.rows.length === 0) {
+      await pool.query(
+        `UPDATE usuarios
+         SET disponivel = TRUE
+         WHERE id = $1`,
+        [motoristaId]
+      );
+
+      console.log(`[AUTO] Motorista ${motoristaId} ficou disponível. Nenhuma corrida na fila.`);
+      return false;
+    }
+
+    const corrida = proximaFila.rows[0];
+
+    // Marca motorista como ocupado novamente
+    await pool.query(
+      `UPDATE usuarios
+       SET disponivel = FALSE
+       WHERE id = $1`,
+      [motoristaId]
+    );
+
+    // Atualiza corrida para match e atribui o motorista
+    const corridaAtualizada = await pool.query(
+      `UPDATE corridas
+       SET status = 'match',
+           motorista_id = $1,
+           atualizado_em = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING *`,
+      [motoristaId, corrida.corrida_id]
+    );
+
+    // Remove a corrida da fila usada
+    if (filaOrigem === "local") {
+      await pool.query(
+        `DELETE FROM fila_corridas
+         WHERE id = $1`,
+        [corrida.fila_id]
+      );
+
+      await removerDaFilaRedis(
+        "rebu:fila:local",
+        corrida.corrida_id
+      );
+
+      // Se essa corrida também estava aguardando saída para o Core, remove para evitar duplicidade
+      await pool.query(
+        `DELETE FROM fila_saida_corridas
+         WHERE corrida_id = $1`,
+        [corrida.corrida_id]
+      );
+
+      await removerDaFilaRedis(
+        "rebu:fila:saida",
+        corrida.corrida_id
+      );
+    }
+
+    if (filaOrigem === "entrada_core") {
+      await pool.query(
+        `DELETE FROM fila_entrada_corridas
+         WHERE id = $1`,
+        [corrida.fila_id]
+      );
+
+      await removerDaFilaRedis(
+        "rebu:fila:entrada",
+        corrida.corrida_id
+      );
+    }
+
+    // Registra no audit log que a corrida saiu da fila
+    await registrarEvento(
+      corrida.corrida_id,
+      "ride_dequeued",
+      {
+        estadoAnterior: "request",
+        estadoNovo: "match",
+        filaOrigem,
+        motoristaId
+      }
+    );
+
+    // Registra o match automático
+    await registrarEvento(
+      corrida.corrida_id,
+      "ride_matched",
+      {
+        estadoAnterior: "request",
+        estadoNovo: "match",
+        motoristaId,
+        automatico: true,
+        origemFila: filaOrigem
+      }
+    );
+
+    // Continua o fluxo automático da corrida
+    await automatizarFluxoCorrida(
+      corridaAtualizada.rows[0].id,
+      motoristaId
+    );
+
+    console.log(`[AUTO] Motorista ${motoristaId} pegou corrida ${corrida.corrida_id} da fila ${filaOrigem}.`);
+    return true;
+
+  } catch (erro) {
+    console.error(`[AUTO] Erro ao processar próxima corrida da fila: ${erro.message}`);
+
+    await pool.query(
+      `UPDATE usuarios
+       SET disponivel = TRUE
+       WHERE id = $1`,
+      [motoristaId]
+    );
+
+    return false;
+  }
+}
+
+// Automatiza o fluxo da corrida quando há motorista disponível
+async function automatizarFluxoCorrida(corridaId, motoristaId) {
+  try {
+    // Match -> Confirm
+    await pool.query(
+      `UPDATE corridas
+       SET status = 'confirm',
+           atualizado_em = CURRENT_TIMESTAMP
+       WHERE id = $1 AND status = 'match'`,
+      [corridaId]
+    );
+
+    await registrarEvento(
+      corridaId,
+      "ride_confirm",
+      {
+        estadoAnterior: "match",
+        estadoNovo: "confirm",
+        automatico: true
+      }
+    );
+
+    // Confirm -> In Transit
+    await pool.query(
+      `UPDATE corridas
+       SET status = 'in_transit',
+           atualizado_em = CURRENT_TIMESTAMP
+       WHERE id = $1 AND status = 'confirm'`,
+      [corridaId]
+    );
+
+    await registrarEvento(
+      corridaId,
+      "ride_in_transit",
+      {
+        estadoAnterior: "confirm",
+        estadoNovo: "in_transit",
+        automatico: true
+      }
+    );
+
+    // Finaliza automaticamente depois do tempo configurado
+    setTimeout(async () => {
+      try {
+        const corridaFinalizada = await pool.query(
+          `UPDATE corridas
+           SET status = 'complete',
+               atualizado_em = CURRENT_TIMESTAMP
+           WHERE id = $1 AND status = 'in_transit'
+           RETURNING *`,
+          [corridaId]
+        );
+
+        if (corridaFinalizada.rows.length === 0) {
+          console.warn(`[AUTO] Corrida ${corridaId} não estava em andamento para finalizar.`);
+          return;
+        }
+
+        await registrarEvento(
+          corridaId,
+          "ride_completed",
+          {
+            estadoAnterior: "in_transit",
+            estadoNovo: "complete",
+            automatico: true
+          }
+        );
+
+        console.log(`[AUTO] Corrida ${corridaId} finalizada automaticamente.`);
+
+        // Depois de finalizar, tenta pegar a próxima corrida da fila
+        await processarProximaCorridaDaFila(motoristaId);
+
+      } catch (erro) {
+        console.error(`[AUTO] Erro ao finalizar corrida ${corridaId}: ${erro.message}`);
+      }
+    }, TEMPO_FINALIZACAO_MS);
+
+  } catch (erro) {
+    console.error(`[AUTO] Erro ao automatizar corrida ${corridaId}: ${erro.message}`);
+  }
+}
 
 // Solicita uma nova corrida
 async function solicitarCorrida(req, res) {
@@ -116,6 +360,12 @@ async function solicitarCorrida(req, res) {
         ]
       );
 
+      // Espelha a fila local no Redis para visualização durante os testes
+      await adicionarNaFilaRedis(
+        "rebu:fila:local",
+        corridaPendente.rows[0].id
+      );
+
       // Registra a corrida na fila de saída para futura delegação ao Core
       await pool.query(
         `INSERT INTO fila_saida_corridas (
@@ -129,6 +379,12 @@ async function solicitarCorrida(req, res) {
           "CORE",
           "Serviço congestionado: fila local atingiu o limite"
         ]
+      );
+
+      // Espelha a fila de saída no Redis para visualização durante os testes
+      await adicionarNaFilaRedis(
+        "rebu:fila:saida",
+        corridaPendente.rows[0].id
       );
 
       // Gera log estruturado com nível WARN
@@ -210,8 +466,14 @@ async function solicitarCorrida(req, res) {
         }
       );
 
+      // Confirma, inicia e finaliza automaticamente
+      await automatizarFluxoCorrida(
+        corrida.rows[0].id,
+        motoristaId
+      );
+
       return res.status(201).json({
-        mensagem: "Corrida criada com motorista atribuído.",
+        mensagem: "Corrida criada com motorista atribuído. Confirmação, início e finalização serão automáticos.",
         corrida: corrida.rows[0],
         rota: rotaCoordenadas
       });
@@ -251,6 +513,12 @@ async function solicitarCorrida(req, res) {
         corridaPendente.rows[0].id,
         "Sem motoristas disponíveis"
       ]
+    );
+
+    // Espelha a fila local no Redis para visualização durante os testes
+    await adicionarNaFilaRedis(
+      "rebu:fila:local",
+      corridaPendente.rows[0].id
     );
 
     // Gera log estruturado com nível WARN
@@ -441,14 +709,9 @@ async function finalizarCorrida(req, res) {
       }
     );
 
-    // Libera o motorista após a finalização da corrida
+    // Depois de finalizar manualmente, tenta pegar a próxima corrida da fila
     if (corrida.motorista_id) {
-      await pool.query(
-        `UPDATE usuarios
-         SET disponivel = TRUE
-         WHERE id = $1`,
-        [corrida.motorista_id]
-      );
+      await processarProximaCorridaDaFila(corrida.motorista_id);
     }
 
     return res.json({
