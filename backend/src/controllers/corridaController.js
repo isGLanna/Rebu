@@ -1,6 +1,7 @@
 const pool = require("../config/db");
 const { buscarRota } = require("../services/routeService");
 const { registrarEvento } = require("../utils/auditLogger");
+const coreClient = require("../services/coreClient");
 
 // Limite máximo de corridas na fila antes de considerar congestionamento
 const LIMITE_FILA = 3;
@@ -132,7 +133,7 @@ async function solicitarCorrida(req, res) {
       );
 
       // Gera log estruturado com nível WARN
-      await registrarEvento(
+      const evento = await registrarEvento(
         corridaPendente.rows[0].id,
         "ride_queued",
         {
@@ -143,8 +144,24 @@ async function solicitarCorrida(req, res) {
         "WARN"
       );
 
+      // Delega ao Core via leilão — todas as mensagens de delegação passam pelo Core
+      try {
+        const resultado = await coreClient.criarCorridaNoCore(corridaPendente.rows[0]);
+
+        console.log(
+          `[corridaController] Corrida delegada ao Core. rideUuid=${resultado?.rideUuid}`,
+          resultado
+        );
+      } catch (erroCore) {
+        // Falha na comunicação com o Core não cancela o fluxo local
+        console.warn(
+          "[corridaController] Falha ao delegar corrida ao Core:",
+          erroCore.message
+        );
+      }
+
       return res.status(201).json({
-        mensagem: "Serviço congestionado. Corrida enviada para fila local e fila de saída.",
+        mensagem: "Serviço congestionado. Corrida enviada para fila local e delegada ao Core via leilão.",
         politica_overflow: `fila_corridas >= ${LIMITE_FILA}`,
         corrida: corridaPendente.rows[0],
         rota: rotaCoordenadas
@@ -371,6 +388,18 @@ async function atualizarStatusCorrida(req, res, statusAtualEsperado, novoStatus)
       }
     );
 
+    // Notifica o Core sobre a mudança de status da corrida
+    // O Core exige: PATCH /rides/{rideUuid}/status com {newState, serviceId, logicalTimestamp}
+    // Requer que este serviço detenha o lock distribuído da corrida no Core
+    try {
+      await coreClient.atualizarStatusNoCore(corrida_id, novoStatus);
+    } catch (erroCore) {
+      console.warn(
+        `[corridaController] Falha ao atualizar status '${novoStatus}' no Core para corrida ${corrida_id}:`,
+        erroCore.message
+      );
+    }
+
     return res.json({
       mensagem: `Status alterado para ${novoStatus}.`,
       corrida: atualizada.rows[0]
@@ -440,6 +469,17 @@ async function finalizarCorrida(req, res) {
         estadoNovo: "complete"
       }
     );
+
+    // Notifica o Core sobre a finalização da corrida
+    // PATCH /rides/{rideUuid}/status com newState: "complete" libera o lock automaticamente
+    try {
+      await coreClient.atualizarStatusNoCore(corrida_id, "complete");
+    } catch (erroCore) {
+      console.warn(
+        `[corridaController] Falha ao notificar Core sobre finalização da corrida ${corrida_id}:`,
+        erroCore.message
+      );
+    }
 
     // Libera o motorista após a finalização da corrida
     if (corrida.motorista_id) {

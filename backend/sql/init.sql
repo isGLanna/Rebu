@@ -29,7 +29,10 @@ CREATE TABLE IF NOT EXISTS corridas (
   origem_lat NUMERIC(10,6),
   origem_lng NUMERIC(10,6),
   destino_lat NUMERIC(10,6),
-  destino_lng NUMERIC(10,6)
+  destino_lng NUMERIC(10,6),
+
+  -- Relógio lógico de Lamport (atualizado pelo auditLogger)
+  logical_timestamp BIGINT DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS fila_corridas (
@@ -58,3 +61,15 @@ CREATE TABLE IF NOT EXISTS fila_saida_corridas (
   status VARCHAR(50) DEFAULT 'aguardando_delegacao',
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Tabela de auditoria com relógio de Lamport (usada por auditLogger.js)
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  corrida_id UUID REFERENCES corridas(id),
+  event_type VARCHAR(100) NOT NULL,
+  service_id VARCHAR(100) NOT NULL,
+  logical_timestamp BIGINT NOT NULL,
+  wall_clock_time TIMESTAMP NOT NULL,
+  payload JSONB
+);
+

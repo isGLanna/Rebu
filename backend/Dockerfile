@@ -8,4 +8,4 @@ COPY . .
 
 EXPOSE 3001
 
-CMD ["npm", "run", "dev"]ç
+CMD ["npm", "run", "dev"]
