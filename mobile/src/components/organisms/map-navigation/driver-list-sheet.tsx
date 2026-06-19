@@ -11,7 +11,6 @@ import { ModalScreen } from '../modal'
 
 interface DriverListSheetProps {
   tripInfo: { driver: Driver | undefined, car: Car | undefined, cost: number, distance: string, duration: string  }
-  onAccept: (driver: Driver, car: Car) => void
   onCancel: () => void
   onRequestNewDriver: () => void
 }
@@ -54,7 +53,7 @@ const Loading = ({ timer }: {timer: number}) => (
   </View>
 )
 
-export function DriverListSheet({ tripInfo, onAccept, onCancel, onRequestNewDriver }: DriverListSheetProps) {
+export function DriverListSheet({ tripInfo, onCancel, onRequestNewDriver }: DriverListSheetProps) {
   const modalRef = useRef<BottomSheetModal>(null)
   const backgroundColor = useThemeColor({}, 'background')
   const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false)
@@ -70,7 +69,6 @@ export function DriverListSheet({ tripInfo, onAccept, onCancel, onRequestNewDriv
 
   const handleAccept = useCallback((driver: Driver, car: Car) => {
     wasAccepted.current = true
-    onAccept(driver, car)
     modalRef.current?.close()
   }, [wasAccepted])
 

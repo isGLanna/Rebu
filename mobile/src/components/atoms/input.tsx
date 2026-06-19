@@ -10,7 +10,11 @@ export function Input ({ style,...props}: InputProps) {
   const textColor = useThemeColor({}, 'text')
 
   return (
-    <TextInput {...props} style={[ styles.input, { borderColor, color: textColor }, style]} ></TextInput>
+    // define que será um text input com letras minusculas no teclado
+    <TextInput 
+      {...props} 
+      style={[ styles.input, { borderColor, color: textColor }, style]}
+    />
   )
 }
 

@@ -2,7 +2,7 @@
 
 cd ../k8s
 
-# Extrai script de inicialização do banco de dados e cria o configmap para o Postgres acessar
+# Extrai script de inicialização do banco de dados e cria o configmap para o Postgres acessar o sql
 # Obs: caso já exista, deleta para garantir atualizações automáticas da estrutura sql
 kubectl delete configmap db-init-script --ignore-not-found
 kubectl delete pvc postgres-pvc --ignore-not-found

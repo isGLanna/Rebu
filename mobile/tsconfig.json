@@ -17,6 +17,8 @@
       "@types/*": ["./src/types/*"],
       "@skeleton/*": ["./src/components/atoms/skeleton/*"],
       "@service/*": ["./src/services/*"],
+      "@context/*": ["./src/context/*"],
+      "@styles/*": ["./src/styles/*"]
     }
   },
   "include": [

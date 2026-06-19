@@ -1,10 +1,10 @@
 import { View, StyleSheet, useColorScheme } from 'react-native'
 import { ThemedText, ThemedView, Button } from '@comp/index'
-import { useThemeColor } from '../hooks/use-theme-color'
+import { useThemeColor } from '../../hooks/use-theme-color'
 import { useState } from 'react'
-import { FloatingLabel } from '@molecules/animated-floating'
+import { FloatingLabel } from '@molecules/floating-label'
 import { authenticate } from '@api/auth'
-import { Colors } from '../styles/theme'
+import { Colors } from '../../styles/theme'
 import { router } from 'expo-router'
 
 export default function Register () {
@@ -16,14 +16,13 @@ export default function Register () {
     confirmPassword: '',
     accountType: null,
   })
-  const buttonColor = useColorScheme() === 'light' ? Colors.branding._500 : Colors.branding._600
 
   const handleSubmit = async () => {
     const result = await authenticate.registerUser({
       name: user.name,
       email: user.email,
       password: user.password,
-      type: user.accountType === 'rider' ? 'rider' : 'driver'
+      type: 'rider'
     })
 
     if (result?.status === 'success') {
@@ -65,24 +64,6 @@ export default function Register () {
           value={user.confirmPassword}
           onChangeText={(text) => setUser(prev => ({ ...prev, confirmPassword: text}))}
         />
-
-        <View style={{ width: '100%', gap: 8, marginBottom: 8 }}>
-          <ThemedText style={{ paddingHorizontal: 8 }}>Tipo de conta</ThemedText>
-          <View style={{ flexDirection: 'row', gap: 32, justifyContent: 'center', alignItems: 'center' }}>
-            <Button
-              style={ user.accountType === 'rider' ? { backgroundColor: buttonColor, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4 } : {}}
-              onPress={() => setUser(prev => ({...prev, accountType: 'rider'}))}
-              type='normal'>
-                Passageiro
-              </Button>
-            <Button
-              style={ user.accountType === 'driver' ? { backgroundColor: buttonColor, boxShadow: `2px 2px 8px ${Colors.branding._500}80`, elevation: 4  } : {}}
-              onPress={() => setUser(prev => ({...prev, accountType: 'driver'}))}
-              type='normal'>
-                Motorista
-              </Button>
-          </View>
-        </View>
 
         <Button onPress={handleSubmit} type='defaultSemiBold'>
           Criar conta

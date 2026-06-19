@@ -11,6 +11,11 @@ export default function Layout() {
         <Stack initialRouteName={anchor}>
           <Stack.Screen name={anchor} options={{ headerShown: false }} />
           <Stack.Screen name="navigation-map" options={{ headerShown: false }} />
+          <Stack.Screen name="index" options={{ headerShown: false }}/>
+          <Stack.Screen name="login" options={{ headerShown: false }}/>
+          <Stack.Screen name="register-driver" options={{ headerShown: false }}/>
+          <Stack.Screen name="register-vehicle" options={{ headerShown: false }} />
+
         </Stack>
       </BottomSheetModalProvider>
     </GestureHandlerRootView>
