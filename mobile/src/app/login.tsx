@@ -1,15 +1,17 @@
 import { View, StyleSheet } from 'react-native'
 import { useState } from 'react'
 import { Button, ThemedText, ThemedView } from '@comp/index'
-import { FloatingLabel } from '@molecules/animated-floating'
+import { FloatingLabel } from '@molecules/floating-label'
 import { Colors } from '../styles/theme'
 import { router } from 'expo-router'
 import { useThemeColor } from '../hooks/use-theme-color'
 import { useColorScheme } from '../hooks/use-color-scheme'
 import { authenticate } from '../api/auth'
+import { useToast } from '@context/toast-context'
 
 export default function Login() {
   const formColor = useThemeColor({}, 'container')
+  const { showToast } = useToast()
   const [user, setUser] = useState<{ email: string, password: string, accountType: 'rider' | 'driver' | null}>({
     email: '',
     password: '',
@@ -19,7 +21,7 @@ export default function Login() {
 
   async function handleSubmit() {
     if (user.accountType === null) {
-      alert('Selecione um tipo de conta')
+      showToast('Selecione um tipo de conta', 'warning')
       return
     }
 
@@ -43,7 +45,7 @@ export default function Login() {
         router.push('/rider')
       }
     } catch (err) {
-      alert('Erro ao fazer login')
+      showToast('Erro ao fazer login', 'error')
     }
   }
 

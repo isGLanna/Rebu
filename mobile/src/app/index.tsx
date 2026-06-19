@@ -1,4 +1,4 @@
-import { Button, TextButton, ThemedView } from '@comp/index'
+import { Button, TextButton, ThemedText, ThemedView } from '@comp/index'
 import { ImageBackground, StyleSheet, View, Text, Appearance } from 'react-native'
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { LinearGradient } from 'expo-linear-gradient'
@@ -42,9 +42,19 @@ export default function App() {
         <Button onPress={() => router.push('/login')} style={ styles.button }>
           Entrar
         </Button>
-        <TextButton type='link' onPress={() => router.push('/register')}>
-          Cadastrar
-        </TextButton>
+        <View style={{ alignItems: 'center', gap: 8 }}>
+          <ThemedText>Cadastre-se como:</ThemedText>
+          <View style={{ flexDirection: 'row', gap: 32, marginTop: 8 }}>
+            <TextButton type='link' onPress={() => router.push('/rider/register')}>
+              Passageiro
+            </TextButton>
+            <TextButton type='link' onPress={() => router.push('/driver/register-driver')}>
+              Motorista
+            </TextButton>
+          </View>
+
+        </View>
+
       </View>
     </ThemedView>
   )
