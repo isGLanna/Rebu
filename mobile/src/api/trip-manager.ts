@@ -1,13 +1,13 @@
 import type { Race, RequestRaceResponse, RouteInfo } from '@/src/types/trip'
 import { authenticate } from './auth'
-import { TripState } from '../hooks/use-ride-match';
+import { TripState } from '../websocket/use-trip-events';
 
 const baseUrl = process.env.EXPO_BASE_URL || 'http://192.168.3.82:3001'
 const header = {'Content-Type': 'application/json'}
 
 export class TripManager {
   // enviar requisição com token de validação
-  async requestRace(origin: { latitude: number, longitude: number }, waypoints: { latitude: number, longitude: number }[]): Promise<| { success: true; cost: number; geometry: { type: string, coordinates: number[][] }; distance: string; duration: string } | { success: false; message: string }> {
+  async requestRace(origin: { latitude: number, longitude: number }, waypoints: { latitude: number, longitude: number }[]): Promise<| { success: true; tripId: string; cost: number; geometry: { type: string, coordinates: number[][] }; distance: string; duration: string } | { success: false; message: string }> {
     const response = await fetch(`${baseUrl}/corridas`, {
       method: 'POST',
       headers: {
@@ -25,7 +25,7 @@ export class TripManager {
     const data = await response.json()
     const run = data.corrida
 
-    return { success: true, cost: Number(run.valor), geometry: run.geometry, distance: run.distancia_km, duration: run.duracao_min }
+    return { success: true, tripId: run.id, cost: Number(run.valor), geometry: run.geometry, distance: run.distancia_km, duration: run.duracao_min }
   }
 
   async acceptRace() {
@@ -51,13 +51,13 @@ export class TripManager {
    * Retorna status da corrida e, se houver uma corrida recentemente ativa, informa dados do motorista
    * @returns Promise<{ status: string, state: TripState, racingData: Race | null }>
   */
-  async checkExistingRace(): Promise<{ status: string, tripId: string | null, state: TripState, racingData: Race | null }> {
+  async existingRunCheck(): Promise<{ status: string, tripId: string | null, state: TripState, racingData: Race | null }> {
     // Simulação de resposta da API
     const response = await fetch(`${baseUrl}/corridas/active`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${await authenticate.getToken()}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       }
     })
     return { status: 'success', tripId: null, state: 'idle', racingData: null }

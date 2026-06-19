@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import * as Location from 'expo-location'
 import Map from "@rnmapbox/maps"
 
-Map.setAccessToken("pk.eyJ1IjoiZ2lvcmRhbm9sYW5uYSIsImEiOiJjbW8wdDV2NTcwYzlwMnhveTVja3htdTRzIn0.hNzDdxjqav0FBkeRIsag0w")
+Map.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN || '')
 
 export default function MapView() {
   const [ location, setLocation ] = useState<Location.LocationObject | null>(null)

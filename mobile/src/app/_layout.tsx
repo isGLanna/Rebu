@@ -1,4 +1,5 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
+import { ToastProvider } from '@/src/context/toast-context'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useFonts } from 'expo-font'
@@ -23,15 +24,17 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack initialRouteName={anchor}>
-        <Stack.Screen name="index" options={{ headerShown: false }}/>
-        <Stack.Screen name="login" options={{ headerShown: false }}/>
-        <Stack.Screen name="register" options={{ headerShown: false }}/>
-        <Stack.Screen name="driver" options={{ headerShown: false }}/>
-        <Stack.Screen name="rider" options={{ headerShown: false }}/>
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <ToastProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack initialRouteName={anchor}>
+          <Stack.Screen name="index" options={{ headerShown: false }}/>
+          <Stack.Screen name="login" options={{ headerShown: false }}/>
+          <Stack.Screen name="driver" options={{ headerShown: false }}/>
+          <Stack.Screen name="rider" options={{ headerShown: false }}/>
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </ToastProvider>
+
   )
 }
