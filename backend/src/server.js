@@ -8,6 +8,19 @@ const { initSocket } = require("./websockets/socket")
 
 const PORT = process.env.PORT || 3001;
 
+initSocket(server);
+
+async function registrarNoCore() {
+  setTimeout(async () => {
+    try {
+      const resultado = await coreClient.registrarGrupo(SERVICE_URL);
+      console.log(`[server] Grupo registrado no Core:`, resultado);
+    } catch (erro) {
+      console.warn(`[server] Falha ao registrar grupo no Core (Core pode estar offline):`, erro.message);
+    }
+  }, 3000);
+}
+
 // Inicializa o servidor
 conectarRedis()
   .then(() => {

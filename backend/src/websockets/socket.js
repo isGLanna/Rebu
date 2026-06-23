@@ -16,12 +16,14 @@ function initSocket(httpServer) {
   io.on("connection", (socket) => {
     console.log(`[Socket] Usuário conectado: ${socket.usuario.nome}`);
 
-    const roomName = `trip_${tripId}`
+
 
     socket.on("join_trip_room", (tripId) => {
+      const roomName = `trip_${tripId}`
       socket.join(roomName);
     });
-    socket.on("update_my_location", ({ tripId, latitude, longitude }) => {
+    socket.on("update_my_location", ({ tripId, coords }) => {
+      const roomName = `trip_${tripId}`
       socket.to(roomName).emit("driver_location_updated", coords);
     });
 

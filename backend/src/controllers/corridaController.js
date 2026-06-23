@@ -6,6 +6,7 @@ const {
   removerDaFilaRedis
 } = require("../services/queueRedisService");
 const { getIO } = require("../websockets/socket");
+const coreClient = require("../services/coreClient");
 
 // Limite máximo de corridas na fila antes de considerar congestionamento
 const LIMITE_FILA = 50;
@@ -399,9 +400,22 @@ async function solicitarCorrida(req, res) {
         },
         "WARN"
       );
+      
+      try {
+        const resultado = await coreClient.criarCorridaNoCore(corridaPendente.rows[0]);
+        console.log(
+          `[corridaController] Corrida delegada ao Core. rideUuid=${resultado?.rideUuid}`,
+          resultado
+        );
+      } catch (erroCore) {
+        console.warn(
+          "[corridaController] Falha ao delegar corrida ao Core:",
+          erroCore.message
+        );
+      }
 
       return res.status(201).json({
-        mensagem: "Serviço congestionado. Corrida enviada para fila local e fila de saída.",
+        mensagem: "Serviço congestionado. Corrida enviada para fila local e delegada ao Core via leilão.",
         politica_overflow: `fila_corridas >= ${LIMITE_FILA}`,
         corrida: corridaPendente.rows[0],
         rota: rotaCoordenadas
@@ -640,6 +654,15 @@ async function atualizarStatusCorrida(req, res, statusAtualEsperado, novoStatus)
       }
     );
 
+    try {
+      await coreClient.atualizarStatusNoCore(corrida_id, novoStatus);
+    } catch (erroCore) {
+      console.warn(
+        `[corridaController] Falha ao atualizar status '${novoStatus}' no Core para corrida ${corrida_id}:`,
+        erroCore.message
+      );
+    }
+
     const io = getIO();
     if (io) {
       const roomName = `trip_${corrida_id}`;
@@ -718,6 +741,15 @@ async function finalizarCorrida(req, res) {
         estadoNovo: "complete"
       }
     );
+    
+    try {
+      await coreClient.atualizarStatusNoCore(corrida_id, "complete");
+    } catch (erroCore) {
+      console.warn(
+        `[corridaController] Falha ao notificar Core sobre finalização da corrida ${corrida_id}:`,
+        erroCore.message
+      );
+    }
 
     // Depois de finalizar manualmente, tenta pegar a próxima corrida da fila
     if (corrida.motorista_id) {
