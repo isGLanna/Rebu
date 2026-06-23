@@ -5,11 +5,11 @@ import { TripManager } from '@api/trip-manager'
 import { useLocalSearchParams } from 'expo-router'
 import { Colors } from '@/src/styles/theme'
 import { MapMarkers, DriverMarker } from '@organisms/map-navigation/index'
-import type { RouteInfo } from '@/src/types'
 import IconMD from '@expo/vector-icons/MaterialCommunityIcons'
 import { DriverListSheet } from '@organisms/map-navigation/driver-list-sheet'
 import { useRacingStore } from '@context/racing-state'
 import Map from '@rnmapbox/maps'
+import { useToast } from '@/src/context/toast-context'
 
 type MapMarker = {
   key: string,
@@ -26,16 +26,17 @@ export default function MapView() {
   const [startingPoint, setStartingPoint] = useState<{ latitude: number, longitude: number }>({ latitude: parseFloat(lat), longitude: parseFloat(lng) })
   const [changedStartingPoint, setChangedStartingPoint] = useState<boolean>(false)
   const [markers, setMarkers] = useState<MapMarker[]>([])
+  const { showToast } = useToast()
 
   const tripManager = useMemo(() => new TripManager(), [])
+
   const tripState = useRacingStore(state => state.tripState)
-  const driverLocation = useRacingStore(state => state.tripData.driverLocation)
-  const tripId = useRacingStore(state => state.tripData.tripId)
-  const driver = useRacingStore(state => state.tripData.driver)
-  const route = useRacingStore(state => state.tripData.route)
+  const { tripId, driverLocation, driver, route } = useRacingStore(state => state.tripData)
+  const setTripState = useRacingStore(state => state.setTripState)
+  const setTripData = useRacingStore(state => state.setTripData)
 
   const newMarker = useCallback((e: { geometry: { coordinates: number[] } }) => {
-    if (markers.length >= 3 && (changedStartingPoint && markers.length >= 4)) return alert('Limite de três paradas atingido')
+    if (markers.length >= 3 && (changedStartingPoint && markers.length >= 4)) return showToast('Limite de três paradas atingido', 'error')
     if (tripState !== 'idle') return
     
     if (markers.length === 0 && changedStartingPoint){
@@ -60,7 +61,7 @@ export default function MapView() {
     if (tripState !== 'idle' || markers.length === 0 || (changedStartingPoint && markers.length === 1)) return
 
     try {
-      useRacingStore((state) => state.setTripState('request'))
+      setTripState('request')
       const { latitude, longitude } = changedStartingPoint ? markers[0].coords : { latitude: parseFloat(lat), longitude: parseFloat(lng) }
       const response = await tripManager.requestRace(
         { latitude, longitude },
@@ -71,17 +72,17 @@ export default function MapView() {
         throw new Error(response.message || 'Não foi possível solicitar a corrida')
       }
       
-      useRacingStore((state) => state.setTripData({ tripId: response.tripId, route: { ...response, geometry: response.geometry }}))
+      setTripData({ tripId: response.tripId, route: { ...response, geometry: response.geometry }})
 
     } catch (error: unknown) {
-      useRacingStore((state) => state.setTripState('idle'))
-      alert((error as Error).message || error || 'Ocorreu um erro ao solicitar a corrida. Tente novamente')
+      setTripState('idle')
+      showToast((error as Error).message || 'Ocorreu um erro ao solicitar a corrida. Tente novamente', 'error')
     }
   }, [markers, changedStartingPoint, tripState])
 
   const requestNewDriver = useCallback(async () => {
     try {
-      useRacingStore((state) => state.setTripState('request'))
+      setTripState('request')
       const response = await tripManager.requestRace(
         { latitude: startingPoint.latitude, longitude: startingPoint.longitude },
         markers.map(m => m.coords)
@@ -91,9 +92,9 @@ export default function MapView() {
         throw new Error('message' in response ? response.message : 'Não foi possível solicitar a corrida')
       }
 
-    } catch (error: any) {
-      useRacingStore((state) => state.setTripState('idle'))
-      alert(error.message || error || 'Ocorreu um erro ao solicitar um novo motorista. Tente novamente')
+    } catch (error: unknown) {
+      setTripState('idle')
+      showToast((error as Error).message || 'Ocorreu um erro ao solicitar um novo motorista. Tente novamente', 'error')
     }
   }, [markers, startingPoint])
 
@@ -106,9 +107,9 @@ export default function MapView() {
       if (response.status !== 200)
         throw new Error('Não foi possível cancelar a corrida')
 
-      useRacingStore((state) => state.setTripState('idle'))
-    } catch (error: unknown) {
-      alert((error as Error).message || error || 'Não foi possível cancelar a corrida')
+      setTripState('idle')
+    } catch (err: unknown) {
+      showToast((err as Error).message || 'Não foi possível cancelar a corrida', 'error')
     }
   }, [tripId])
 
@@ -143,8 +144,8 @@ export default function MapView() {
             <MapMarkers markers={markers} isSearchingDriver={tripState === 'request'} setMarkers={setMarkers} isStartingPoint={changedStartingPoint} />
         </Map.MapView>
 
-        {driver && route &&
-          <DriverListSheet tripInfo={{ driver: driver, car: driver.car, cost: route.cost, distance: route.distance, duration: route.duration }} onCancel={cancelSearchRace} onRequestNewDriver={requestNewDriver}/>
+        {route &&
+          <DriverListSheet tripInfo={{ driver: driver, car: driver?.car, cost: route.cost, distance: route.distance, duration: route.duration }} onCancel={cancelSearchRace} onRequestNewDriver={requestNewDriver}/>
         }
 
         {(tripState === 'idle') && // Exibe botão de solicitar corrida apenas qunado não houver corrida ativa ou solicitada

@@ -6,6 +6,7 @@ import foodIcon from '@comp/assets/food-icon.png'
 import packageIcon from '@comp/assets/package-icon.png'
 import carIcon from '@comp/assets/car-icon.png'
 import thief from '@comp/assets/thief.png'
+import taxi from '@comp/assets/support-taxi.jpg'
 import * as Location from 'expo-location'
 import { useThemeColor } from '@/src/hooks/use-theme-color'
 import { Colors } from '@/src/styles/theme'
@@ -64,15 +65,21 @@ export default function Home() {
         <ThemedText type='subtitle'>Instruções</ThemedText>
         <View style={ styles.content}>
           <TouchableOpacity style={[ styles.card, { borderColor }]} activeOpacity={0.7}>
-            <Image source={thief} style={[styles.icon, { backgroundColor: Colors.grey._500 }]} resizeMode='contain'/>
-            <ThemedText type='regular'>
-            {'  '} Comportamentos suspeitos e fora do comum devem ficar sob alerta. Siga as diretrizes da plataforma para se manter seguro!
+            <Image source={thief} style={[styles.icon, { backgroundColor: Colors.gray._500 }]} resizeMode='contain'/>
+            <ThemedText type='regular' numberOfLines={8} ellipsizeMode="tail">
+              Comportamentos suspeitos e fora do comum devem ficar sob alerta. Siga as diretrizes da plataforma para se manter seguro!
             </ThemedText>
           </TouchableOpacity>
           <TouchableOpacity style={[ styles.card, { borderColor }]} activeOpacity={0.7}>
-            <Image source={thief} style={[styles.icon, { backgroundColor: Colors.grey._500 }]} resizeMode='contain'/>
-            <ThemedText>
-            {'  '} Comportamentos suspeitos e fora do comum devem ficar sob alerta. Siga as diretrizes da plataforma para se manter seguro!
+            <Image source={taxi} style={[styles.icon, { backgroundColor: Colors.gray._500 }]} resizeMode='contain'/>
+            <ThemedText type='regular' numberOfLines={8} ellipsizeMode="tail">
+              Seja cordial e profissional com os passageiros, um bom atendimento proporciona uma experiência melhor para todos e influenciar positivamente suas avaliações.
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity style={[ styles.card, { borderColor }]} activeOpacity={0.7}>
+            <Image source={taxi} style={[styles.icon, { backgroundColor: Colors.gray._500 }]} resizeMode='contain'/>
+            <ThemedText type='regular' numberOfLines={8} ellipsizeMode="tail">
+              Respeite as leis de transito e os limites de velocidade. A segunça é fundamental para proteger você e seus passageiros.
             </ThemedText>
           </TouchableOpacity>
         </View>
@@ -87,6 +94,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     gap: 16,
+    marginBottom: 48
   },
   span: {
     fontSize: 24,

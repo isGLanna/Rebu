@@ -5,9 +5,11 @@ const {
   adicionarNaFilaRedis,
   removerDaFilaRedis
 } = require("../services/queueRedisService");
+const { getIO } = require("../websockets/socket");
+const coreClient = require("../services/coreClient");
 
 // Limite máximo de corridas na fila antes de considerar congestionamento
-const LIMITE_FILA = 3;
+const LIMITE_FILA = 50;
 
 // Tempo para finalizar a corrida automaticamente
 const TEMPO_FINALIZACAO_MS = 30000;
@@ -398,9 +400,22 @@ async function solicitarCorrida(req, res) {
         },
         "WARN"
       );
+      
+      try {
+        const resultado = await coreClient.criarCorridaNoCore(corridaPendente.rows[0]);
+        console.log(
+          `[corridaController] Corrida delegada ao Core. rideUuid=${resultado?.rideUuid}`,
+          resultado
+        );
+      } catch (erroCore) {
+        console.warn(
+          "[corridaController] Falha ao delegar corrida ao Core:",
+          erroCore.message
+        );
+      }
 
       return res.status(201).json({
-        mensagem: "Serviço congestionado. Corrida enviada para fila local e fila de saída.",
+        mensagem: "Serviço congestionado. Corrida enviada para fila local e delegada ao Core via leilão.",
         politica_overflow: `fila_corridas >= ${LIMITE_FILA}`,
         corrida: corridaPendente.rows[0],
         rota: rotaCoordenadas
@@ -639,6 +654,24 @@ async function atualizarStatusCorrida(req, res, statusAtualEsperado, novoStatus)
       }
     );
 
+    try {
+      await coreClient.atualizarStatusNoCore(corrida_id, novoStatus);
+    } catch (erroCore) {
+      console.warn(
+        `[corridaController] Falha ao atualizar status '${novoStatus}' no Core para corrida ${corrida_id}:`,
+        erroCore.message
+      );
+    }
+
+    const io = getIO();
+    if (io) {
+      const roomName = `trip_${corrida_id}`;
+      if (novoStatus === "match") io.to(roomName).emit("driver_matched", { tripId: corrida_id });
+      if (novoStatus === "confirm") io.to(roomName).emit("driver_arrived", { tripId: corrida_id });
+      if (novoStatus === "in_transit") io.to(roomName).emit("trip_started", { tripId: corrida_id });
+      if (novoStatus === "complete") io.to(roomName).emit("trip_finished", { tripId: corrida_id, finalCost: atualizada.rows[0].valor || 0 });
+    }
+
     return res.json({
       mensagem: `Status alterado para ${novoStatus}.`,
       corrida: atualizada.rows[0]
@@ -708,6 +741,15 @@ async function finalizarCorrida(req, res) {
         estadoNovo: "complete"
       }
     );
+    
+    try {
+      await coreClient.atualizarStatusNoCore(corrida_id, "complete");
+    } catch (erroCore) {
+      console.warn(
+        `[corridaController] Falha ao notificar Core sobre finalização da corrida ${corrida_id}:`,
+        erroCore.message
+      );
+    }
 
     // Depois de finalizar manualmente, tenta pegar a próxima corrida da fila
     if (corrida.motorista_id) {

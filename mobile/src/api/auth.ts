@@ -7,11 +7,13 @@ const baseUrl = process.env.EXPO_BASE_URL || 'http://192.168.3.82:3001'
 
 export const authenticate = {
   async signIn (user: Omit<User, 'name'>): Promise<{ success: boolean, message?: string }> {
-      const response = await fetch(`${baseUrl}/login`, {
-        method: 'POST',
-        headers: header,
-        body: JSON.stringify({email: user.email, senha: user.password, tipo: user.type})
-      })
+    const tipo = user.type === 'driver' ? 'motorista' : 'passageiro'
+
+    const response = await fetch(`${baseUrl}/usuarios/login`, {
+      method: 'POST',
+      headers: header,
+      body: JSON.stringify({email: user.email, senha: user.password, tipo: tipo})
+    })
 
     const data = await response.json()
 
@@ -19,17 +21,19 @@ export const authenticate = {
       return { success: false, message: data.message || 'Erro ao autenticar usuário' }
     }
 
+    const usuario = data.usuario
     await this.setToken(data.token)
-    await this.setUser({ id: data.userId, name: data.name, email: user.email, type: user.type })
+    await this.setUser({ id: usuario.id, name: usuario.nome, email: usuario.email, type: usuario.tipo })
     return { success: true }
   },
 
   async registerUser (user: User): Promise<{ status: 'success' | 'error', message: string } | undefined> {
+    const tipo = user.type === 'driver' ? 'motorista' : 'passageiro'
     try {
       const response = await fetch(`${baseUrl}/usuarios`, {
         method: 'POST',
         headers: header,
-        body: JSON.stringify({nome: user.name, email: user.email, senha: user.password, tipo: user.type})
+        body: JSON.stringify({nome: user.name, email: user.email, senha: user.password, tipo: tipo})
       })
 
       if (!response.ok) {
@@ -37,10 +41,8 @@ export const authenticate = {
       }
 
       return { status: 'success', message: 'Usuário criado com sucesso' }
-      // Enviar toast de sucesso
     } catch (err) {
       return { status: 'error', message: 'Erro ao criar usuário' }
-      // Enviar toast de falha
     }
   },
 

@@ -8,7 +8,7 @@ type ImageSkeletonProps = ViewProps & {
 }
 
 export function ImageSkeleton({ styles, ...props }: ImageSkeletonProps) {
-  const gradientColors = [Colors.grey._500, Colors.grey._300]
+  const gradientColors = [Colors.gray._500, Colors.gray._300]
   const animatedValue = useRef(new Animated.Value(0)).current
   const [ viewWidth, setViewWidth ] = useState(0)
 

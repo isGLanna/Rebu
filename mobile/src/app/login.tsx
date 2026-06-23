@@ -36,6 +36,7 @@ export default function Login() {
         throw new Error(response.message || 'Email ou senha incorretos')
       }
 
+      showToast('Login realizado com sucesso', 'success')
       if (user.accountType === 'driver') {
         router.push('/driver')
         return
@@ -44,8 +45,9 @@ export default function Login() {
       if (user.accountType === 'rider') {
         router.push('/rider')
       }
-    } catch (err) {
-      showToast('Erro ao fazer login', 'error')
+    } catch (err: unknown) {
+      alert((err as Error).message || 'Erro ao fazer login')
+      showToast((err as Error).message || 'Erro ao fazer login', 'error')
     }
   }
 

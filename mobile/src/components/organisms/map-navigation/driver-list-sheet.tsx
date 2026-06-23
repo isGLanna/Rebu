@@ -1,5 +1,5 @@
 import { StyleSheet, View, ActivityIndicator } from 'react-native'
-import { BottomSheetModal, BottomSheetView,  } from '@gorhom/bottom-sheet'
+import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet'
 import type { Driver } from '@/src/types/driver'
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { DriverCard } from '@molecules/driver-card'
@@ -10,7 +10,7 @@ import { Button, ThemedText } from '@comp/index'
 import { ModalScreen } from '../modal'
 
 interface DriverListSheetProps {
-  tripInfo: { driver: Driver | undefined, car: Car | undefined, cost: number, distance: string, duration: string  }
+  tripInfo: { driver?: Driver | undefined, car?: Car | undefined, cost: number, distance: string, duration: string  }
   onCancel: () => void
   onRequestNewDriver: () => void
 }
@@ -97,7 +97,7 @@ export function DriverListSheet({ tripInfo, onCancel, onRequestNewDriver }: Driv
           index={1}
           snapPoints={snapPoints}
           backgroundStyle={{ backgroundColor }}
-          handleIndicatorStyle={{ backgroundColor: Colors.grey._500 + '80' }}
+          handleIndicatorStyle={{ backgroundColor: Colors.gray._500 + '80' }}
           enablePanDownToClose={true}
           onDismiss={handleOnDismiss}
           >
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     paddingVertical: 2,
     borderBottomWidth: 0.5,
-    borderColor: Colors.grey._700,
+    borderColor: Colors.gray._700,
   },
   cost: {
     fontWeight: 'bold',

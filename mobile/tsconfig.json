@@ -18,7 +18,8 @@
       "@skeleton/*": ["./src/components/atoms/skeleton/*"],
       "@service/*": ["./src/services/*"],
       "@context/*": ["./src/context/*"],
-      "@styles/*": ["./src/styles/*"]
+      "@styles/*": ["./src/styles/*"],
+      "@socket/*": ["./src/websocket/*"]
     }
   },
   "include": [

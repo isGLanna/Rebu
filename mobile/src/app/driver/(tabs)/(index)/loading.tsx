@@ -30,7 +30,7 @@ export const Loading = () => {
         <View style={ styles.content}>
           {Array.from({ length: 4 }).map((_, index) => (
             <View style={[ styles.card, { borderColor }]} key={index}>
-              <ImageSkeleton style={[styles.icon, { backgroundColor: Colors.grey._500 }]}/>
+              <ImageSkeleton style={[styles.icon, { backgroundColor: Colors.gray._500 }]}/>
               <TextSkeleton type='regular'/>
               <TextSkeleton type='regular'/>
               <TextSkeleton type='regular' style={{ width: '60%' }}/>
