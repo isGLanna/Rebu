@@ -4,6 +4,8 @@ const { initScoket } = require("./websockets/socket")
 
 const usuarioRoutes = require("./routes/usuarioRoutes");
 const corridaRoutes = require("./routes/corridaRoutes");
+const delegacaoRoutes = require("./routes/delegacaoRoutes");
+const leilaoRoutes = require("./routes/leilaoRoutes");
 const { healthCheck } = require("./controllers/healthController");
 
 const app = express();
