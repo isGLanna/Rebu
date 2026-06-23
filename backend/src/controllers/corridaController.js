@@ -5,9 +5,10 @@ const {
   adicionarNaFilaRedis,
   removerDaFilaRedis
 } = require("../services/queueRedisService");
+const { getIO } = require("../websockets/socket");
 
 // Limite máximo de corridas na fila antes de considerar congestionamento
-const LIMITE_FILA = 3;
+const LIMITE_FILA = 50;
 
 // Tempo para finalizar a corrida automaticamente
 const TEMPO_FINALIZACAO_MS = 30000;
@@ -638,6 +639,15 @@ async function atualizarStatusCorrida(req, res, statusAtualEsperado, novoStatus)
         estadoNovo: novoStatus
       }
     );
+
+    const io = getIO();
+    if (io) {
+      const roomName = `trip_${corrida_id}`;
+      if (novoStatus === "match") io.to(roomName).emit("driver_matched", { tripId: corrida_id });
+      if (novoStatus === "confirm") io.to(roomName).emit("driver_arrived", { tripId: corrida_id });
+      if (novoStatus === "in_transit") io.to(roomName).emit("trip_started", { tripId: corrida_id });
+      if (novoStatus === "complete") io.to(roomName).emit("trip_finished", { tripId: corrida_id, finalCost: atualizada.rows[0].valor || 0 });
+    }
 
     return res.json({
       mensagem: `Status alterado para ${novoStatus}.`,

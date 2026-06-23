@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.grey._500 + '60',
+    borderBottomColor: Colors.gray._500 + '60',
   },
   image: {
     width: 60,

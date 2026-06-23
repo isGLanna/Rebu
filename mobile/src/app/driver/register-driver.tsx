@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { FloatingLabel } from '@molecules/floating-label'
 import { Colors } from '../../styles/theme'
 import { router } from 'expo-router'
+import { useToast } from '@/src/context/toast-context'
 
 export default function RegisterDriver () {
   const formColor = useThemeColor({}, 'container')
@@ -15,14 +16,15 @@ export default function RegisterDriver () {
     confirmPassword: '',
     accountType: null,
   })
+  const { showToast } = useToast()
 
   const nextPage = async () => {
     if (!user.name || !user.email || !user.password || !user.confirmPassword) {
-      alert('Preencha todos os campos')
+      showToast('Preencha todos os campos', 'error')
       return
     }
     if (user.password !== user.confirmPassword) {
-      alert('As senhas não coincidem')
+      showToast('As senhas não coincidem', 'error')
       return
     }
 

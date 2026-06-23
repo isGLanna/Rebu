@@ -7,6 +7,7 @@ import { authenticate } from '@api/auth'
 import { Colors } from '../../styles/theme'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Car } from '@/src/types'
+import { useToast } from '@/src/context/toast-context'
 
 export default function RegisterVehicle () {
   const params = useLocalSearchParams()
@@ -17,11 +18,12 @@ export default function RegisterVehicle () {
     licensePlate: '',
     color: '',
   })
+  const { showToast } = useToast()
 
   // TODO: Implementar recebimento de dados do veículo
   const handleSubmit = async () => {
     if(!vehicle.make || !vehicle.model || !vehicle.licensePlate || !vehicle.color) {
-      alert('Preencha todos os campos do veículo')
+      showToast('Preencha todos os campos do veículo', 'error')
       return
     }
 
@@ -33,9 +35,10 @@ export default function RegisterVehicle () {
     })
 
     if (result?.status === 'success') {
+      showToast('Usuário criado com sucesso', 'success')
       router.push('/')
     } else {
-      alert(result?.message || 'Erro ao criar usuário')
+      showToast(result?.message || 'Erro ao criar usuário', 'error')
     }
   }
 

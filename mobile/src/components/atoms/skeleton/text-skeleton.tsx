@@ -9,7 +9,7 @@ export type ThemedTextProps = ViewProps & {
 
 export function TextSkeleton({ type = 'normal', style, ...props }: ThemedTextProps) {
   const animatedValue = useRef(new Animated.Value(0)).current
-  const gradientColors = [Colors.grey._500, Colors.grey._300]
+  const gradientColors = [Colors.gray._500, Colors.gray._300]
   const [ viewWidth, setViewWidth ] = useState(0)
 
   useEffect(() => {

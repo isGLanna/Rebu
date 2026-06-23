@@ -6,6 +6,7 @@ import { FloatingLabel } from '@molecules/floating-label'
 import { authenticate } from '@api/auth'
 import { Colors } from '../../styles/theme'
 import { router } from 'expo-router'
+import { useToast } from '@context/toast-context'
 
 export default function Register () {
   const formColor = useThemeColor({}, 'container')
@@ -16,6 +17,7 @@ export default function Register () {
     confirmPassword: '',
     accountType: null,
   })
+  const { showToast } = useToast()
 
   const handleSubmit = async () => {
     const result = await authenticate.registerUser({
@@ -26,9 +28,10 @@ export default function Register () {
     })
 
     if (result?.status === 'success') {
+      showToast('Usuário criado com sucesso', 'success')
       router.push('/')
     } else {
-      alert(result?.message || 'Erro ao criar usuário')
+      showToast(result?.message || 'Erro ao criar usuário', 'error')
     }
   }
 
