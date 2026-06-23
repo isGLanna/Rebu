@@ -30,4 +30,14 @@ app.use("/usuarios", usuarioRoutes);
 // Rotas de corridas
 app.use("/corridas", corridaRoutes);
 
+// Rota de delegação — usada pelo Core para nos enviar corridas (fluxo antigo/manual)
+// Todas as mensagens de delegação passam pelo Core, nunca diretamente entre serviços
+app.use("/delegacao", delegacaoRoutes);
+
+// Webhooks do Core — endpoints que o Core chama neste serviço durante o leilão:
+//   POST /rides/incoming         ← oferta de leilão (todos os grupos)
+//   POST /rides/:rideUuid/assigned ← resultado do leilão (somente o vencedor)
+// IMPORTANTE: deve ser montado em /rides para coincidir com o serviceUrl registrado no Core
+app.use("/rides", leilaoRoutes);
+
 module.exports = app;
