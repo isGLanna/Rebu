@@ -1,7 +1,7 @@
 import { UserProfile } from '@/src/types/user'
+import { baseUrl } from '../config/base-url'
 
 const header = {'Content-Type': 'application/json'}
-const baseUrl = process.env.EXPO_BASE_URL || 'http://192.168.3.82:3001'
 
 export class User {
   static async fetchUserProfile(): Promise<UserProfile> {

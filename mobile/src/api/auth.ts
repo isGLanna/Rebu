@@ -1,30 +1,50 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { baseUrl } from '../config/base-url'
 import { User } from '../types/user'
 import { router } from 'expo-router'
 
 const header = { "Content-Type": "application/json" }
-const baseUrl = process.env.EXPO_BASE_URL || 'http://192.168.3.82:3001'
 
 export const authenticate = {
+  AbortController() {
+    const controller = new AbortController()
+    const { signal } = controller
+    return { controller, signal }
+  },
+
   async signIn (user: Omit<User, 'name'>): Promise<{ success: boolean, message?: string }> {
     const tipo = user.type === 'driver' ? 'motorista' : 'passageiro'
+    const { controller, signal } = this.AbortController()
 
-    const response = await fetch(`${baseUrl}/usuarios/login`, {
-      method: 'POST',
-      headers: header,
-      body: JSON.stringify({email: user.email, senha: user.password, tipo: tipo})
-    })
+    const timeout = setTimeout(() => {
+      controller.abort()
+    }, 5000)
 
-    const data = await response.json()
+    try {
+      const response = await fetch(`${baseUrl}/usuarios/login`, {
+        method: 'POST',
+        headers: header,
+        body: JSON.stringify({email: user.email, senha: user.password, tipo: tipo}),
+        signal: signal
+      })
 
-    if (!response.ok || !data.token) {
-      return { success: false, message: data.message || 'Erro ao autenticar usuário' }
+      clearTimeout(timeout)
+
+      const data = await response.json()
+
+      if (!response.ok || !data.token)
+        return { success: false, message: data.message || 'Erro ao autenticar usuário' }
+
+      const usuario = data.usuario
+      await this.setToken(data.token)
+      await this.setUser({ id: usuario.id, name: usuario.nome, email: usuario.email, type: usuario.tipo })
+      return { success: true }
+    } catch (err: unknown) {
+      if ((err as Error).name === 'AbortError')
+        return { success: false, message: 'O servidor não respondeu a tempo' }
+
+      return { success: false, message: (err as Error).message || 'Erro ao autenticar usuário' }
     }
-
-    const usuario = data.usuario
-    await this.setToken(data.token)
-    await this.setUser({ id: usuario.id, name: usuario.nome, email: usuario.email, type: usuario.tipo })
-    return { success: true }
   },
 
   async registerUser (user: User): Promise<{ status: 'success' | 'error', message: string } | undefined> {

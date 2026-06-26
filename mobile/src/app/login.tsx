@@ -17,11 +17,16 @@ export default function Login() {
     password: '',
     accountType: null,
   })
+  const [isLoading, setIsLoading] = useState(false)
   const buttonColor = useColorScheme() === 'light' ? Colors.branding._500 : Colors.branding._600
 
   async function handleSubmit() {
+    if (isLoading) return
+    setIsLoading(true)
+
     if (user.accountType === null) {
       showToast('Selecione um tipo de conta', 'warning')
+      setIsLoading(false)
       return
     }
 
@@ -46,8 +51,9 @@ export default function Login() {
         router.push('/rider')
       }
     } catch (err: unknown) {
-      alert((err as Error).message || 'Erro ao fazer login')
       showToast((err as Error).message || 'Erro ao fazer login', 'error')
+    } finally {
+      setIsLoading(false)
     }
   }
 

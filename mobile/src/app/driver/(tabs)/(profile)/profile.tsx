@@ -3,21 +3,27 @@ import { View, StyleSheet, TouchableOpacity, Image, Appearance } from 'react-nat
 import { useAsyncStorage } from '@hooks/use-async-storage'
 import IconFA from '@expo/vector-icons/FontAwesome'
 import { UserProfile } from '@/src/types/user'
-import { User } from '@/src/api/user'
 import { useEffect, useState } from 'react'
 import { Colors } from '@/src/styles/theme'
 import { router } from 'expo-router'
 import { Loading } from './loading'
+import { authenticate } from '@/src/api/auth'
 
 export default function Profile() {
   const [ user, setUser ] = useState<UserProfile | null>(null)
   const [currentTheme, setCurrentTheme] = useAsyncStorage('theme', Appearance.getColorScheme())
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      User.fetchUserProfile().then(profile => setUser(profile))
-    }, 1000)
-    return () => clearTimeout(timer)
+    authenticate.getUser().then((user) => {
+      setUser({
+        name: user?.name || '', 
+        type: user?.type === 'rider' ? 'passageiro' : 'motorista', 
+        rating: 4.5,
+        image: 'https://us.123rf.com/450wm/anyaberkut/anyaberkut1603/anyaberkut160300954/59927355-happy-smiling-driver-in-the-car-portrait-of-young-successful-business-man.jpg'
+      })
+    }).catch((err) => {
+      console.error('Erro ao obter perfil do usuário:', err)
+    })
   }, [])
 
   const handleLogout = () => {
