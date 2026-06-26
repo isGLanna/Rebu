@@ -35,7 +35,6 @@ export function MapMarkers({ markers, isSearchingDriver, setMarkers, isStartingP
             ) : (
               <Icon name="map-marker-alt" style={{ color: Colors.red._500 }} size={24} />
             )}
-          
         </Map.PointAnnotation>
       })}
     </>

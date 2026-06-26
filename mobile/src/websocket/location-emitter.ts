@@ -18,7 +18,7 @@ export function useLocationEmitter() {
 
       locationSubscription = await Location.watchPositionAsync(
         { 
-          accuracy: Location.Accuracy.High, 
+          accuracy: Location.Accuracy.High,
           distanceInterval: 15,
           timeInterval: 3000
         },

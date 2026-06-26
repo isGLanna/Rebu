@@ -5,7 +5,7 @@ const {
   adicionarNaFilaRedis,
   removerDaFilaRedis
 } = require("../services/queueRedisService");
-const { getIO } = require("../websockets/socket");
+const { emitToUser } = require("../websockets/socket");
 const coreClient = require("../services/coreClient");
 
 // Limite máximo de corridas na fila antes de considerar congestionamento
@@ -145,11 +145,23 @@ async function processarProximaCorridaDaFila(motoristaId) {
       }
     );
 
+    // COMENTARR PARA TESTAR
     // Continua o fluxo automático da corrida
     await automatizarFluxoCorrida(
       corridaAtualizada.rows[0].id,
       motoristaId
     );
+
+
+    emitToUser(motoristaId, 'trip_state_changed', {
+      tripId: corrida.corrida_id,
+      status: 'match'
+    });
+
+    emitToUser(corrida.passageiro_id, 'trip_state_changed', {
+      tripId: corrida.corrida_id,
+      status: 'match'
+    });
 
     console.log(`[AUTO] Motorista ${motoristaId} pegou corrida ${corrida.corrida_id} da fila ${filaOrigem}.`);
     return true;
@@ -170,7 +182,9 @@ async function processarProximaCorridaDaFila(motoristaId) {
 
 // Automatiza o fluxo da corrida quando há motorista disponível
 async function automatizarFluxoCorrida(corridaId, motoristaId) {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
     // Match -> Confirm
     await pool.query(
       `UPDATE corridas
@@ -242,12 +256,18 @@ async function automatizarFluxoCorrida(corridaId, motoristaId) {
         await processarProximaCorridaDaFila(motoristaId);
 
       } catch (erro) {
+
         console.error(`[AUTO] Erro ao finalizar corrida ${corridaId}: ${erro.message}`);
       }
     }, TEMPO_FINALIZACAO_MS);
 
+    await client.query('COMMIT');
+
   } catch (erro) {
+    await client.query('ROLLBACK');
     console.error(`[AUTO] Erro ao automatizar corrida ${corridaId}: ${erro.message}`);
+  } finally {
+    client.release();
   }
 }
 
@@ -481,11 +501,23 @@ async function solicitarCorrida(req, res) {
         }
       );
 
+      // COMENTARR PARA TESTAR
       // Confirma, inicia e finaliza automaticamente
       await automatizarFluxoCorrida(
         corrida.rows[0].id,
         motoristaId
       );
+
+      emitToUser(motoristaId, 'trip_state_changed', {
+        tripId: corrida.rows[0].id,
+        status: 'match'
+      });
+
+      emitToUser(passageiro_id, 'trip_state_changed', {
+        tripId: corrida.rows[0].id,
+        status: 'match'
+      });
+
 
       return res.status(201).json({
         mensagem: "Corrida criada com motorista atribuído. Confirmação, início e finalização serão automáticos.",
@@ -587,7 +619,11 @@ async function buscarCorridaPorId(req, res) {
 
   try {
     const resultado = await pool.query(
-      `SELECT * FROM corridas WHERE id = $1`,
+      `SELECT c.*, 
+              u.nome AS passageiro_nome
+      FROM corridas c
+      LEFT JOIN usuarios u ON u.id = c.passageiro_id
+      WHERE c.id = $1`,
       [corrida_id]
     );
 
@@ -663,14 +699,17 @@ async function atualizarStatusCorrida(req, res, statusAtualEsperado, novoStatus)
       );
     }
 
-    const io = getIO();
-    if (io) {
-      const roomName = `trip_${corrida_id}`;
-      if (novoStatus === "match") io.to(roomName).emit("driver_matched", { tripId: corrida_id });
-      if (novoStatus === "confirm") io.to(roomName).emit("driver_arrived", { tripId: corrida_id });
-      if (novoStatus === "in_transit") io.to(roomName).emit("trip_started", { tripId: corrida_id });
-      if (novoStatus === "complete") io.to(roomName).emit("trip_finished", { tripId: corrida_id, finalCost: atualizada.rows[0].valor || 0 });
-    }
+    emitToUser(corrida.motorista_id, 'trip_state_changed', {
+      tripId: corrida_id,
+      status: novoStatus,
+      finalCost: novoStatus === 'complete' ? (atualizada.rows[0].valor_total || null) : null
+    });
+
+    emitToUser(corrida.passageiro_id, 'trip_state_changed', {
+      tripId: corrida_id,
+      status: novoStatus,
+      finalCost: novoStatus === 'complete' ? (atualizada.rows[0].valor_total || null) : null
+    });
 
     return res.json({
       mensagem: `Status alterado para ${novoStatus}.`,
@@ -864,6 +903,26 @@ async function reprocessarFila(req, res) {
   }
 }
 
+async function atualizarStatusMotorista(req, res) {
+  const { motorista_id } = req.params;
+  const { disponivel } = req.body;
+
+  try {
+    await pool.query(
+      `UPDATE usuarios SET disponivel = $1 WHERE id = $2 AND tipo = 'motorista'`,
+      [disponivel, motorista_id]
+    );
+
+    if (disponivel) {
+      await processarProximaCorridaDaFila(motorista_id);
+    }
+
+    return res.json({ mensagem: `Motorista ${disponivel ? 'online' : 'offline'}` });
+  } catch (erro) {
+    return res.status(500).json({ erro: "Erro ao atualizar status" });
+  }
+}
+
 module.exports = {
   solicitarCorrida,
   listarCorridas,
@@ -874,5 +933,6 @@ module.exports = {
   listarFilaCorridas,
   listarFilaEntrada,
   listarFilaSaida,
-  reprocessarFila
+  reprocessarFila,
+  atualizarStatusMotorista
 };

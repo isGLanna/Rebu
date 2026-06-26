@@ -11,7 +11,8 @@ const {
   listarFilaCorridas,
   listarFilaEntrada,
   listarFilaSaida,
-  reprocessarFila
+  reprocessarFila,
+  atualizarStatusMotorista
 } = require("../controllers/corridaController");
 
 const {
@@ -35,6 +36,9 @@ router.get("/fila/saida", listarFilaSaida);
 
 // Reprocessa corridas antigas da fila
 router.post("/fila/reprocessar", reprocessarFila);
+
+// Atualiza o status do motorista (disponível ou indisponível)
+router.patch("/motoristas/:motorista_id/status", atualizarStatusMotorista);
 
 // Busca uma corrida específica pelo ID
 // Deve ficar depois das rotas /fila para evitar conflitos

@@ -19,7 +19,9 @@
       "@service/*": ["./src/services/*"],
       "@context/*": ["./src/context/*"],
       "@styles/*": ["./src/styles/*"],
-      "@socket/*": ["./src/websocket/*"]
+      "@socket/*": ["./src/websocket/*"],
+      "@config/*": ["./src/config/*"],
+      "@websocket/*": ["./src/websocket/*"]
     }
   },
   "include": [

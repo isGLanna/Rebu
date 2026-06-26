@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const { initScoket } = require("./websockets/socket")
 
 const usuarioRoutes = require("./routes/usuarioRoutes");
 const corridaRoutes = require("./routes/corridaRoutes");
