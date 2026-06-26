@@ -7,12 +7,15 @@ import type { Car } from '@/src/types/vehicle'
 import { useThemeColor } from '@hooks/use-theme-color'
 import { Colors } from '@/src/styles/theme'
 import { Button, ThemedText } from '@comp/index'
+import { useRaceTimer } from '@hooks/use-race-timer'
 import { ModalScreen } from '../modal'
 
 interface DriverListSheetProps {
   tripInfo: { driver?: Driver | undefined, car?: Car | undefined, cost: number, distance: string, duration: string  }
-  onCancel: () => void
+  isFinished: boolean
+  onCancel: () => Promise<boolean>
   onRequestNewDriver: () => void
+  onFinish: () => void
 }
 
 /*  Painel Deslizante (BottomSheet)
@@ -53,42 +56,24 @@ const Loading = ({ timer }: {timer: number}) => (
   </View>
 )
 
-export function DriverListSheet({ tripInfo, onCancel, onRequestNewDriver }: DriverListSheetProps) {
+export function DriverListSheet({ tripInfo, isFinished, onCancel, onRequestNewDriver, onFinish }: DriverListSheetProps) {
   const modalRef = useRef<BottomSheetModal>(null)
   const backgroundColor = useThemeColor({}, 'background')
-  const [ isModalOpen, setIsModalOpen ] = useState<boolean>(false)
-  const wasAccepted = useRef<boolean>(false)
   const etaText: string = formattedEtaTime(tripInfo.duration)
-  const [timer, setTimer] = useState(0)
+  const { timer } = useRaceTimer()
 
-  const snapPoints = ['8%', '35%']
+  const snapPoints = ['11%', '35%']
 
   useEffect(() => {
     modalRef.current?.present()
   }, [])
 
-  const handleAccept = useCallback((driver: Driver, car: Car) => {
-    wasAccepted.current = true
-    modalRef.current?.close()
-  }, [wasAccepted])
-
   // Garante que onCancel seja chamado somente se o modal fechar sem aceitar corrida (onCancel limpa estado de searchRace e COORDENADAS DE ROTA)
-  const handleOnDismiss = useCallback(() => {
-    if (!wasAccepted.current) {
-      onCancel()
+  const handleOnDismiss = useCallback(async () => {
+    if (!isFinished) {
+      await onCancel()
     }
-  }, [wasAccepted])
-
-  useEffect(() => {
-    if(tripInfo.driver) return
-
-    const interval = setInterval(() => {
-      setTimer(prev => prev + 1)
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [tripInfo.driver])
-
+  }, [isFinished, onCancel])
 
   return (
       <>
@@ -98,7 +83,7 @@ export function DriverListSheet({ tripInfo, onCancel, onRequestNewDriver }: Driv
           snapPoints={snapPoints}
           backgroundStyle={{ backgroundColor }}
           handleIndicatorStyle={{ backgroundColor: Colors.gray._500 + '80' }}
-          enablePanDownToClose={true}
+          enablePanDownToClose={isFinished}
           onDismiss={handleOnDismiss}
           >
           <BottomSheetView  style={styles.header}>
@@ -114,27 +99,20 @@ export function DriverListSheet({ tripInfo, onCancel, onRequestNewDriver }: Driv
               </View>
 
               {tripInfo.driver && tripInfo.car ? (
-                <DriverCard driverName={tripInfo.driver.name} rating={tripInfo.driver.rating} car={tripInfo.car} onPress={() => setIsModalOpen(prev => !prev)} />) : 
+                <DriverCard driverName={tripInfo.driver.name} rating={tripInfo.driver.rating} car={tripInfo.car} onPress={() => {}} />) :
                 (<Loading timer={timer}/>)}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
               </View>
             </View>
-            {tripInfo.driver && tripInfo.car ? (
-              <Button style={styles.button} onPress={onRequestNewDriver}>Solicitar novo motorista</Button>
-            ) : null}
           </BottomSheetView>
         </BottomSheetModal>
 
-        {isModalOpen && tripInfo.driver && tripInfo.car && (
-          <ModalScreen title="Deseja continuar com a corrida?">
-            <View style={{ flexDirection: 'row', gap: 16 }}>
-              <Button onPress={onCancel}>Cancelar</Button>
-              <Button  onPress={() => {
-                handleAccept(tripInfo.driver!, tripInfo.car!)
-                setIsModalOpen(prev => !prev)
-                }}>
-                Confirmar
-              </Button>
+        {isFinished && (
+          <ModalScreen title="Corrida encerrada">
+            <View style={styles.finishedContainer}>
+              <ThemedText type="subtitle">Obrigado por usar o Rebu!</ThemedText>
+              <ThemedText>Valor cobrado: R${tripInfo.cost.toFixed(2)}</ThemedText>
+              <Button onPress={onFinish}>Voltar ao início</Button>
             </View>
           </ModalScreen>
         )}
@@ -170,5 +148,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 16,
     paddingVertical: 18
+  },
+  finishedContainer: {
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 8,
   }
 })

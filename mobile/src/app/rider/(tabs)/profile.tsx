@@ -2,17 +2,26 @@ import { ThemedText, ThemedView, TextButton } from '@comp/index'
 import { View, StyleSheet, TouchableOpacity, Image, Appearance } from 'react-native'
 import IconFA from '@expo/vector-icons/FontAwesome'
 import { UserProfile } from '@/src/types/user'
-import { User } from '@/src/api/user'
 import { useEffect, useState } from 'react'
 import { Colors } from '@/src/styles/theme'
 import { router } from 'expo-router'
+import { authenticate } from '@api/auth'
 
 export default function Profile() {
   const [ user, setUser ] = useState<UserProfile | null>(null)
 
   useEffect(() => {
-    User.fetchUserProfile().then(profile => setUser(profile))
-  })
+    authenticate.getUser().then((user) => {
+      setUser({
+        name: user?.name || '', 
+        type: user?.type === 'rider' ? 'passageiro' : 'motorista', 
+        rating: 4.5,
+        image: 'https://us.123rf.com/450wm/anyaberkut/anyaberkut1603/anyaberkut160300954/59927355-happy-smiling-driver-in-the-car-portrait-of-young-successful-business-man.jpg'
+      })
+    }).catch((err) => {
+      console.error('Erro ao obter perfil do usuário:', err)
+    })
+  }, [])
 
   const handleLogout = () => {
     router.push('/')

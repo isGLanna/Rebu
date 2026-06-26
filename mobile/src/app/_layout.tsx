@@ -6,6 +6,8 @@ import { useFonts } from 'expo-font'
 import 'react-native-reanimated'
 
 import { useColorScheme } from '@/src/hooks/use-color-scheme';
+import { RaceTimerProvider } from '../context/race-timer'
+
 export const anchor = 'index'
 
 export default function RootLayout() {
@@ -25,15 +27,17 @@ export default function RootLayout() {
 
   return (
     <ToastProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack initialRouteName={anchor}>
-          <Stack.Screen name="index" options={{ headerShown: false }}/>
-          <Stack.Screen name="login" options={{ headerShown: false }}/>
-          <Stack.Screen name="driver" options={{ headerShown: false }}/>
-          <Stack.Screen name="rider" options={{ headerShown: false }}/>
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <RaceTimerProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack initialRouteName={anchor}>
+            <Stack.Screen name="index" options={{ headerShown: false }}/>
+            <Stack.Screen name="login" options={{ headerShown: false }}/>
+            <Stack.Screen name="driver" options={{ headerShown: false }}/>
+            <Stack.Screen name="rider" options={{ headerShown: false }}/>
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </RaceTimerProvider>
     </ToastProvider>
 
   )

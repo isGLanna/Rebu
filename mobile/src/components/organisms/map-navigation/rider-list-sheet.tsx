@@ -1,9 +1,12 @@
 import { StyleSheet, View, ActivityIndicator } from 'react-native'
 import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet'
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo, useState, useCallback } from 'react'
 import { useThemeColor } from '@hooks/use-theme-color'
 import { Colors } from '@/src/styles/theme'
 import { Button, ThemedText } from '@comp/index'
+import { TripManager } from '@/src/api/trip-manager'
+import { useToast } from '@/src/context/toast-context'
+import { useRacingStore } from '@/src/context/racing-state'
 
 interface Rider {
   name: string
@@ -17,9 +20,7 @@ interface RiderListSheetProps {
     distance?: string
     duration?: string
   }
-  tripState: 'idle' | 'request' | 'match' | 'confirm' | 'in_transit' | 'complete' | 'cancelled'
   isLoading: boolean
-  onAccept: () => void
   onArrive: () => void
   onStart: () => void
   onFinish: () => void
@@ -40,15 +41,35 @@ const formattedEtaTime = (textTime?: string) => {
     return minutes + ' minuto'
 }
 
-export function RiderListSheet({tripInfo, tripState, isLoading, onAccept, onArrive ,onStart, onFinish }: RiderListSheetProps) {
+export function RiderListSheet({tripInfo, isLoading, onArrive ,onStart, onFinish }: RiderListSheetProps) {
+  const [ searchingRace, setSearchingRace ] = useState(false)
   const modalRef = useRef<BottomSheetModal>(null)
   const backgroundColor = useThemeColor({}, 'background')
   const etaText = formattedEtaTime(tripInfo.duration)
-  const snapPoints = tripState === 'idle' ? ['16%'] : ['42%']
+  const snapPoints = ['16%', '35%']
+  const tripManager = useMemo(() => new TripManager(), [])
+  const { tripState } = useRacingStore()
+  const { showToast } = useToast()
 
   useEffect(() => {
     modalRef.current?.present()
   }, [tripState])
+
+  const toggleDriverStatus = useCallback(async () => {
+    setSearchingRace(true)
+    try {
+      const result = await tripManager.toggleDriverStatus(true)
+
+      if (!result.success)
+        throw new Error(result.message || 'Não foi possível ficar disponível para viagens')
+    
+      showToast('Você está disponível para corridas', 'success')
+
+    } catch(err: unknown) {
+      setSearchingRace(false)
+      showToast((err as Error).message || 'Não foi possível ficar disponível para viagens', 'error')
+    }
+  }, [tripManager, showToast])
 
   return (
     <BottomSheetModal
@@ -62,8 +83,8 @@ export function RiderListSheet({tripInfo, tripState, isLoading, onAccept, onArri
       <BottomSheetView style={styles.container}>
         
         <View style={{ alignItems: 'center' }}>
-          {tripState === 'idle' && <ThemedText type="subtitle">Aguardando corridas...</ThemedText>}
-          {tripState === 'request' && <ThemedText type="subtitle">Corrida encontrada</ThemedText>}
+          {tripState === 'idle' && !searchingRace && <ThemedText type="subtitle">Disponível para viagens</ThemedText>}
+          {tripState === 'idle' && searchingRace && <ThemedText type="subtitle">Aguardando corridas...</ThemedText>}
           {tripState === 'match' && <ThemedText type="subtitle">Buscar passageiro</ThemedText>}
           {tripState === 'confirm' && <ThemedText type="subtitle">Aguardando passageiro no local</ThemedText>}
           {tripState === 'in_transit' && <ThemedText type="subtitle">A caminho do destino</ThemedText>}
@@ -85,26 +106,29 @@ export function RiderListSheet({tripInfo, tripState, isLoading, onAccept, onArri
 
         {tripState !== 'idle' && tripInfo.rider && (
           <View style={styles.contentCard}>
-            <ThemedText>ID Passageiro</ThemedText>
-            <ThemedText type='defaultSemiBold'>{tripInfo.rider.name}</ThemedText>
-            {/* TODO: implementar método de avaliação de motorista */}
-            <ThemedText>⭐ {4.5}</ThemedText>
+            <ThemedText>Passageiro</ThemedText>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <ThemedText type='defaultSemiBold'>{tripInfo.rider.name}</ThemedText>
+              {/* TODO: implementar método de avaliação de motorista */}
+              <ThemedText>⭐ {4.5}</ThemedText>
+            </View>
           </View>
         )}
 
-        {tripState === 'idle' && (
+        {tripState === 'idle' && !searchingRace && (
+          <Button onPress={toggleDriverStatus} style={[styles.button]}>
+            Buscar Corrida
+          </Button>
+        )}
+
+        {tripState === 'idle' && searchingRace && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color={Colors.branding._500} size="small" />
             <ThemedText style={styles.searchingText}>Procurando passageiros próximos...</ThemedText>
-          </View>
+          </View> 
         )}
 
         <View style={styles.actionContainer}>
-          {tripState === 'request' && (
-            <Button onPress={onAccept} style={[styles.button]}>
-              {isLoading ? 'Processando...' : 'Aceitar Corrida'}
-            </Button>
-          )}
 
           {tripState === 'match' && (
             <Button onPress={onArrive} style={[styles.button]}>
@@ -148,7 +172,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'flex-start',
-    padding: 4,
+    padding: 8,
     borderRadius: 8,
     borderWidth: 0.5,
     borderColor: Colors.gray._700,

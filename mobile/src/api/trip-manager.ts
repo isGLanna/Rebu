@@ -1,8 +1,8 @@
 import type { Race, RequestRaceResponse, RouteInfo } from '@/src/types/trip'
 import { authenticate } from './auth'
 import { TripState } from '../websocket/use-trip-events';
+import { baseUrl } from '../config/base-url'
 
-const baseUrl = process.env.EXPO_BASE_URL || 'http://192.168.3.82:3001'
 const header = {'Content-Type': 'application/json'}
 
 export class TripManager {
@@ -27,9 +27,9 @@ export class TripManager {
         method: 'POST',
         headers: await this.getHeaders(),
         body: JSON.stringify({
-          origem_lat: origin.latitude, 
+          origem_lat: origin.latitude,
           origem_lng: origin.longitude,
-          destino_lat: waypoints[0].latitude,
+          destino_lat: waypoints[0].latitude,             // Deve implementar no backend para permitir multiplos pontos
           destino_lng: waypoints[0].longitude
         })
       })
@@ -41,23 +41,10 @@ export class TripManager {
       const data = await response.json()
       const run = data.corrida
 
-      alert(JSON.stringify(run))
-
       return { success: true, tripId: run.id, cost: Number(run.valor), geometry: run.geometry, distance: run.distancia_km, duration: run.duracao_min }
     } catch (err: unknown) {
       return { success: false, message: (err as Error).message || 'Ocorreu um erro ao solicitar a corrida' }
     }
-  }
-
-  async acceptRace(tripId: string): Promise<{ success: boolean; message?: string }> {
-    /* Atualmente a corrida é atribuida automaticamente ao motorista
-    const response = await fetch(`${baseUrl}/corridas/${tripId}/accept`, {
-      method: 'POST',
-      headers: await this.getHeaders()
-    })
-
-    if (!response.ok) return { success: false, message: 'Corrida indisponível ou erro no servidor' }*/
-    return { success: true }
   }
 
   async getTripDetails(tripId: string): Promise<{ success: boolean; data?: any; message?: string }> {
@@ -75,10 +62,32 @@ export class TripManager {
       return { success: false, message: err.message }
     }
   }
+  
+  async toggleDriverStatus(isAvailable: boolean): Promise<{ success: boolean; message?: string }> {
+    const user = await authenticate.getUser();
+
+    if (!user) {
+      return { success: false, message: 'Usuário inválido para esta ação' };
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/corridas/motoristas/${user.id}/status`, {
+        method: 'PATCH',
+        headers: await this.getHeaders(),
+        body: JSON.stringify({ disponivel: isAvailable })
+      })
+
+      if (!response.ok) throw new Error('Não foi possível alterar o status');
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Erro ao mudar status' };
+    }
+  }
 
   async arriveAtLocation(tripId: string): Promise<{ success: boolean; message?: string }> {
-    const response = await fetch(`${baseUrl}/corridas/${tripId}/arrive`, {
-      method: 'POST',
+    const response = await fetch(`${baseUrl}/corridas/${tripId}/confirmar`, {
+      method: 'PATCH',
       headers: await this.getHeaders()
     })
 
@@ -87,8 +96,8 @@ export class TripManager {
   }
 
   async startTrip(tripId: string): Promise<{ success: boolean; message?: string }> {
-    const response = await fetch(`${baseUrl}/corridas/${tripId}/start`, {
-      method: 'POST',
+    const response = await fetch(`${baseUrl}/corridas/${tripId}/iniciar`, {
+      method: 'PATCH',
       headers: await this.getHeaders()
     })
 
@@ -97,8 +106,8 @@ export class TripManager {
   }
 
   async finishTrip(tripId: string): Promise<{ success: boolean; message?: string }> {
-    const response = await fetch(`${baseUrl}/corridas/${tripId}/finish`, {
-      method: 'POST',
+    const response = await fetch(`${baseUrl}/corridas/${tripId}/finalizar`, {
+      method: 'PATCH',
       headers: await this.getHeaders()
     })
 

@@ -40,8 +40,10 @@ export function TextButton({ onPress, style, theme = useColorScheme() as 'light'
 
 const buttonStyles = StyleSheet.create({
   button: {
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 10,
+    minWidth: 100,
   }
 })

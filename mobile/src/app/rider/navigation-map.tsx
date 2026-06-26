@@ -8,6 +8,7 @@ import { MapMarkers, DriverMarker } from '@organisms/map-navigation/index'
 import IconMD from '@expo/vector-icons/MaterialCommunityIcons'
 import { DriverListSheet } from '@organisms/map-navigation/driver-list-sheet'
 import { useRacingStore } from '@context/racing-state'
+import { useRaceTimer } from '@hooks/use-race-timer'
 import Map from '@rnmapbox/maps'
 import { useToast } from '@/src/context/toast-context'
 
@@ -35,9 +36,25 @@ export default function MapView() {
   const setTripState = useRacingStore(state => state.setTripState)
   const setTripData = useRacingStore(state => state.setTripData)
 
+  const { startTimer, resetTimer } = useRaceTimer()
+
   const newMarker = useCallback((e: { geometry: { coordinates: number[] } }) => {
-    if (markers.length >= 3 && (changedStartingPoint && markers.length >= 4)) return showToast('Limite de três paradas atingido', 'error')
     if (tripState !== 'idle') return
+
+    const coords = {
+      latitude: e.geometry.coordinates[1],
+      longitude: e.geometry.coordinates[0],
+    }
+
+    if (changedStartingPoint && markers.length === 0) {
+      setStartingPoint(coords)
+      return
+    }
+
+    const stopLimit = changedStartingPoint ? 4 : 3
+    if (markers.length >= stopLimit) {
+      return showToast('Limite de três paradas atingido', 'error')
+    }
     
     if (markers.length === 0 && changedStartingPoint){
       setStartingPoint(({
@@ -46,14 +63,11 @@ export default function MapView() {
       }))
       setChangedStartingPoint(true)
     }
-    const newMarkerData: MapMarker = {
+    
+    setMarkers(prev => [...prev, {
       key: `marker-${Math.random().toString(8)}`,
-      coords: {
-        latitude: e.geometry.coordinates[1],
-        longitude: e.geometry.coordinates[0],
-      }
-    }
-    setMarkers((prev) => [...prev, newMarkerData])
+      coords,
+    }])
   }, [markers, changedStartingPoint, tripState])
 
   const requestRace = useCallback(async () => {
@@ -62,11 +76,10 @@ export default function MapView() {
 
     try {
       setTripState('request')
+      startTimer()
       const { latitude, longitude } = changedStartingPoint ? markers[0].coords : { latitude: parseFloat(lat), longitude: parseFloat(lng) }
-      const response = await tripManager.requestRace(
-        { latitude, longitude },
-        markers.map(m => m.coords)
-      )
+      const waypoints = changedStartingPoint ? markers.slice(1) : markers
+      const response = await tripManager.requestRace({ latitude, longitude }, waypoints.map(m => m.coords))
 
       if (!response.success) {
         throw new Error(response.message || 'Não foi possível solicitar a corrida')
@@ -98,7 +111,7 @@ export default function MapView() {
     }
   }, [markers, startingPoint])
 
-  const cancelSearchRace = useCallback(async () => {
+  const cancelSearchRace: () => Promise<boolean> = useCallback(async () => {
     try {
       if (!tripId) throw new Error('Nenhuma corrida ativa para cancelar')
 
@@ -108,10 +121,21 @@ export default function MapView() {
         throw new Error('Não foi possível cancelar a corrida')
 
       setTripState('idle')
+      resetTimer()
+      return true
     } catch (err: unknown) {
       showToast((err as Error).message || 'Não foi possível cancelar a corrida', 'error')
+      return false
     }
   }, [tripId])
+
+  const handleFinish = useCallback(() => {
+    setTripState('idle')
+    setTripData({ tripId: null, route: undefined, driver: undefined, driverLocation: undefined })
+    resetTimer()
+    setMarkers([])
+    setChangedStartingPoint(false)
+  }, [])
 
   return(
     <SafeAreaView edges={['top']} style={{ flex: 1 }}>
@@ -145,7 +169,13 @@ export default function MapView() {
         </Map.MapView>
 
         {route &&
-          <DriverListSheet tripInfo={{ driver: driver, car: driver?.car, cost: route.cost, distance: route.distance, duration: route.duration }} onCancel={cancelSearchRace} onRequestNewDriver={requestNewDriver}/>
+          <DriverListSheet
+            tripInfo={{ driver: driver, car: driver?.car, cost: route.cost, distance: route.distance, duration: route.duration }}
+            isFinished={tripState === 'complete'}
+            onCancel={cancelSearchRace} 
+            onRequestNewDriver={requestNewDriver}
+            onFinish={handleFinish}
+            />
         }
 
         {(tripState === 'idle') && // Exibe botão de solicitar corrida apenas qunado não houver corrida ativa ou solicitada

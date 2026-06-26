@@ -24,27 +24,8 @@ export default function MapView() {
 
   useLocationEmitter()
 
-  useEffect(() => {
-    if (tripId && !rider) {
-      tripManager.getTripDetails(tripId).then(res => {
-        if (res.success && res.data) {
-          alert(JSON.stringify(res.data))
-          setTripData({
-            rider: { name: res.data.passageiro_id },
-            route: {
-              cost: Number(res.data.valor) || 0,
-              geometry: res.data.geometry, 
-              distance: res.data.distancia_km || 'N/A',
-              duration: res.data.duracao_min || 'N/A'
-            }
-          })
-        }
-      })
-    }
-  }, [tripId, rider])
-
   const handleAction = useCallback(async (actionFn: () => Promise<{success: boolean, message?: string}>) => {
-    if (tripState === 'request' || !tripId || !location) return
+    if (!tripId) return
 
     setIsLoading(true)
     try {
@@ -55,7 +36,7 @@ export default function MapView() {
     } finally {
       setIsLoading(false)
     }
-  }, [tripState, tripId, tripManager, location])
+  }, [tripState, tripId, tripManager])
 
   if (errorMsg) {
     return (
@@ -65,7 +46,7 @@ export default function MapView() {
     )
   }
 
-  if (!location) {
+  if (!lat || !lng) {
     return (
       <ThemedView style={ styles.container }>
         {/* Adicionar skeleton */}
@@ -104,7 +85,6 @@ export default function MapView() {
       </Map.MapView>
 
       <RiderListSheet
-        tripState={tripState}
         isLoading={isLoading}
         tripInfo={{
           rider: rider,
@@ -112,7 +92,6 @@ export default function MapView() {
           distance: route?.distance,
           duration: route?.duration
         }}
-        onAccept={() => handleAction(() => tripManager.acceptRace(tripId!))}
         onArrive={() => handleAction(() => tripManager.arriveAtLocation(tripId!))}
         onStart={() => handleAction(() => tripManager.startTrip(tripId!))}
         onFinish={() => handleAction(() => tripManager.finishTrip(tripId!))}
