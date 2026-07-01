@@ -423,6 +423,14 @@ async function solicitarCorrida(req, res) {
       
       try {
         const resultado = await coreClient.criarCorridaNoCore(corridaPendente.rows[0]);
+
+        if (resultado?.rideUuid) {
+          await pool.query(
+            `UPDATE corridas SET core_ride_uuid = $1 WHERE id = $2`,
+            [resultado.rideUuid, corridaPendente.rows[0].id]
+          );
+        }
+
         console.log(
           `[corridaController] Corrida delegada ao Core. rideUuid=${resultado?.rideUuid}`,
           resultado
@@ -443,12 +451,7 @@ async function solicitarCorrida(req, res) {
     }
 
     // Busca um motorista disponível para atender a corrida
-    const motoristaDisponivel = await pool.query(
-      `SELECT * FROM usuarios
-       WHERE tipo = 'motorista'
-       AND disponivel = TRUE
-       LIMIT 1`
-    );
+    const motoristaDisponivel = await selecionarEAtribuirMotorista(client);
 
     // Se existir motorista disponível, a corrida vai para o estado match
     if (motoristaDisponivel.rows.length > 0) {
@@ -691,22 +694,23 @@ async function atualizarStatusCorrida(req, res, statusAtualEsperado, novoStatus)
     );
 
     try {
-      await coreClient.atualizarStatusNoCore(corrida_id, novoStatus);
+      const idParaCore = corrida.core_ride_uuid || corrida_id
+      await coreClient.atualizarStatusNoCore(idParaCore, novoStatus);
     } catch (erroCore) {
       console.warn(
-        `[corridaController] Falha ao atualizar status '${novoStatus}' no Core para corrida ${corrida_id}:`,
+        `[corridaController] Falha ao atualizar status '${novoStatus}' no Core para corrida ${idParaCore}:`,
         erroCore.message
       );
     }
 
     emitToUser(corrida.motorista_id, 'trip_state_changed', {
-      tripId: corrida_id,
+      tripId: idParaCore,
       status: novoStatus,
       finalCost: novoStatus === 'complete' ? (atualizada.rows[0].valor_total || null) : null
     });
 
     emitToUser(corrida.passageiro_id, 'trip_state_changed', {
-      tripId: corrida_id,
+      tripId: idParaCore,
       status: novoStatus,
       finalCost: novoStatus === 'complete' ? (atualizada.rows[0].valor_total || null) : null
     });
@@ -782,10 +786,11 @@ async function finalizarCorrida(req, res) {
     );
     
     try {
-      await coreClient.atualizarStatusNoCore(corrida_id, "complete");
+      const idParaCore = corrida.core_ride_uuid || corrida_id;
+      await coreClient.atualizarStatusNoCore(idParaCore, "complete");
     } catch (erroCore) {
       console.warn(
-        `[corridaController] Falha ao notificar Core sobre finalização da corrida ${corrida_id}:`,
+        `[corridaController] Falha ao notificar Core sobre finalização da corrida ${idParaCore}:`,
         erroCore.message
       );
     }
@@ -921,6 +926,24 @@ async function atualizarStatusMotorista(req, res) {
   } catch (erro) {
     return res.status(500).json({ erro: "Erro ao atualizar status" });
   }
+}
+
+async function selecionarEAtribuirMotorista(client) {
+  const resultado = await client.query(
+    `UPDATE usuarios
+     SET disponivel = FALSE,
+         ultima_corrida_em = CURRENT_TIMESTAMP
+     WHERE id = (
+       SELECT id FROM usuarios
+       WHERE tipo = 'motorista' AND disponivel = TRUE
+       ORDER BY ultima_corrida_em ASC NULLS FIRST, id ASC
+       LIMIT 1
+       FOR UPDATE SKIP LOCKED
+     )
+     RETURNING *`
+  );
+
+  return resultado.rows[0] || null;
 }
 
 module.exports = {
