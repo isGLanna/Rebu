@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+- job_name: 'prometheus'
+  static_configs:
+    - targets:
+      - localhost:9090
+
+- job_name: 'rebu-backend'
+  static_configs:
+    - targets:
+    # - localhost:3001                 # Irá funcionar se ambos estiverem no mesmo container
+      - rebu-backend:3001              # Vai funcionar se for o container docker-compose
+      - rebu-backend-services:3001     # Vai funcionar se for uma intância kubernetes

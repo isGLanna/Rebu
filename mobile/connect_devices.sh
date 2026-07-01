@@ -6,5 +6,5 @@ read -p $'Caso seu IP esteja configurado aqui, apenas insira a porta virtual do 
 read -p $'Insira o código de emparelhamento:\n' CODE
 read -p $'Insira a porta real do dispositivo:\n' REAL_PORT
 
-adb pair 192.168.3.10:$PORT --pairing-code $CODE
-adb connect 192.168.3.10:$REAL_PORT
+adb pair 192.168.1.187:$PORT --pairing-code $CODE
+adb connect 192.168.1.187:$REAL_PORT

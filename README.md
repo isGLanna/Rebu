@@ -1,6 +1,6 @@
 # Orientações de Execução
 
-Esse projeto segue uma linha de desenvolvimento com frontend baseado em react-native e o backend em Node.js. Este README está dividido em 3 seções principais. A primeira seção trata de como preparar o ambiente com as variáveis de ambiente utilizadas neste projeto. A seção seguinte define quais são os métodos para executar corretamente o projeto. A terceira seção detalha as ferramentas utilizadas neste projeto para adequar aos princípios de Sistemas Distribuídos foram implementados.
+Esse projeto segue uma linha de desenvolvimento com frontend baseado em react-native e o backend em Node.js. Este README está dividido em 3 seções principais. A primeira seção trata de como preparar o ambiente com as variáveis de ambiente utilizadas neste projeto. A seção seguinte define quais são os métodos para executar corretamente o projeto. A terceira seção detalha as ferramentas utilizadas neste projeto para adequar aos princípios de Sistemas Distribuídos foram implementados. Caso deseje executar o projeto em instâncias kubernetes, utilize a sequencia de scripts presentes em infra/scripts (mobile não está incluso).
 
 O processo pode ser demorado, portanto, foi configurado um script para executar um ou mais comandos de vez.
 
