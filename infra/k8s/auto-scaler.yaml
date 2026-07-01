@@ -17,7 +17,7 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 60
+        averageUtilization: 80
   - type: Resource
     resource:
       name: memory
@@ -30,5 +30,5 @@ spec:
       policies:
       - type: Pods
         value: 2
-        periodSeconds: 60
+        periodSeconds: 30
       #stabilizationWindowSeconds: 180         # <- Tempo de estabilização após desligar uma instância

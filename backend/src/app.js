@@ -1,3 +1,5 @@
+const { ObservabilityMiddleware } = require('./middleware/observabilityMiddleware');
+
 const express = require("express");
 const cors = require("cors");
 
@@ -5,6 +7,7 @@ const usuarioRoutes = require("./routes/usuarioRoutes");
 const corridaRoutes = require("./routes/corridaRoutes");
 const delegacaoRoutes = require("./routes/delegacaoRoutes");
 const leilaoRoutes = require("./routes/leilaoRoutes");
+const observabilityRoutes = require("./routes/observabilityRoutes");
 const { healthCheck } = require("./controllers/healthController");
 
 const app = express();
@@ -40,5 +43,11 @@ app.use("/delegacao", delegacaoRoutes);
 //   POST /rides/:rideUuid/assigned ← resultado do leilão (somente o vencedor)
 // IMPORTANTE: deve ser montado em /rides para coincidir com o serviceUrl registrado no Core
 app.use("/rides", leilaoRoutes);
+
+// Rota de observabilidade — endpoints para expor métricas
+app.use("/metrics", observabilityRoutes);
+
+// Define middleware de retorno de respotas para observabilidade
+app.use((req, res, next) => { ObservabilityMiddleware.recordMetrics(req, res, next) });
 
 module.exports = app;

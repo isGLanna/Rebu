@@ -120,3 +120,8 @@ services:
 volumes:
   postgres_data:
   redis-data:
+
+networks:
+  default:
+    name: rebu-network
+    external: true

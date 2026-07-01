@@ -8,6 +8,10 @@ mobile/node_modules/
 backend/.env
 mobile/.env
 
+# Dados de observabilidade
+**/prometheus/data/*
+**/grafana /data/*
+
 # Logs
 *.log
 

@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: grafana
+        image: grafana/grafana-enterprise:13.1.0
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        ports:
+        - containerPort: 3000
+        env:
+          - name: GF_SECURITY_ADMIN_USER
+            value: "1234"
+          - name: GF_SERVER_ROOT_URL
+            value: "http://localhost:3000"
+          - name: GF_INSTALL_PLUGINS
+            value: "grafana-clock-panel,grafana-simple-json-datasource"
+        volumeMounts:
+          - name: data
+            mountPath: /var/lib/grafana
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: grafana-pvc

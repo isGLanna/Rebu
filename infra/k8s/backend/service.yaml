@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: rebu-backend-service
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: rebu-backend
   ports:
