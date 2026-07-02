@@ -75,18 +75,18 @@ services:
 
       # Integração com o Core RideFleet
       # URL base do Core (com prefixo /api/v1 conforme openapi.yaml)
-      CORE_URL: "http://192.168.1.131:8080/api/v1"
+      CORE_URL: "http://192.168.1.237:8080/api/v1"
       #mudar se for conectar com core novamente
 
       # API Key obtida via POST /groups/register (atualizar após primeiro boot)
-      CORE_API_KEY: "rfk_3e745a592749ff61eb1bccac54fe600d"
+      CORE_API_KEY: "rfk_2065055427192d86432df6df7196ff6e"
 
       # Identificador único deste grupo no ecossistema RideFleet
       GROUP_ID: "rebu"
 
       # URL deste serviço acessível pelo Core na rede Docker
       # O Core usará esta URL para enviar os webhooks de leilão e atribuição
-      SERVICE_URL: "http://192.168.1.131:3001"
+      SERVICE_URL: "http://192.168.1.129:3001"
       #mudar o ip para o novo se for testar novamente
     depends_on:
       database:
@@ -124,4 +124,4 @@ volumes:
 networks:
   default:
     name: rebu-network
-    external: true
+  

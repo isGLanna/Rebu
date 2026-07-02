@@ -3,7 +3,7 @@ const { tick, getCurrentTimestamp } = require("../utils/lamportClock");
 
 // Base URL do Core: http://core:8080/api/v1 (dentro da rede Docker)
 // Sobrescrita pela variável de ambiente CORE_URL
-const CORE_URL = process.env.CORE_URL || "http://192.168.1.131:8080/api/v1";
+const CORE_URL = process.env.CORE_URL || "http://192.168.1.237:8080/api/v1";
 
 // API Key obtida via POST /groups/register — armazenada por variável de ambiente
 const CORE_API_KEY = process.env.CORE_API_KEY || "";

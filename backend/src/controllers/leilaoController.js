@@ -137,6 +137,10 @@ async function receberAtribuicao(req, res) {
         corridaLocal = existente.rows[0];
         console.log(`[leilaoController] Corrida ${rideUuid} já existe localmente.`);
       } else {
+        await pool.query(`
+          INSERT INTO usuarios (id, nome, tipo)
+          VALUES($1, $2, $3),`
+        [passengerId, passengerName, 'passageiro']);           // <<<----- Verificar se não precisa em algum lugar criar um motorista para inserir o id dele
         // Insere a corrida delegada no banco local
         const inserida = await pool.query(
           `INSERT INTO corridas (
