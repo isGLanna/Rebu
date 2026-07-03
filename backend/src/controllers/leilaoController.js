@@ -66,7 +66,7 @@ async function receberLeilao(req, res) {
     // Calcula proposta: ETA estimado em segundos e preço estimado em BRL
     // Valores simples — podem ser melhorados com routeService
     const estimatedEta = 180 + Math.floor(Math.random() * 120); // 3-5 min
-    const estimatedPrice = 15.00 + (qtdFila * 2.00); // preço cresce com a fila
+    const estimatedPrice = 1.00 + (qtdFila * 2.00); // preço cresce com a fila
 
     // Retorna proposta (200) — o Core seleciona o vencedor
     return res.status(200).json({
