@@ -6,8 +6,8 @@ const estados = {
 
 const circuitos = {};
 
-const FAILURE_THRESHOLD = Number(process.env.CB_FAILURE_THRESHOLD || 3);
-const RECOVERY_TIMEOUT_MS = Number(process.env.CB_RECOVERY_TIMEOUT_MS || 30000);
+const FAILURE_THRESHOLD = Number(process.env.CB_FAILURE_THRESHOLD || 5);
+const RECOVERY_TIMEOUT_MS = Number(process.env.CB_RECOVERY_TIMEOUT_MS || 10000);
 
 function criarCircuito(serviceId) {
   if (!circuitos[serviceId]) {
