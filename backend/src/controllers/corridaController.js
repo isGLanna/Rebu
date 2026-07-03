@@ -5,22 +5,25 @@ const {
   adicionarNaFilaRedis,
   removerDaFilaRedis
 } = require("../services/queueRedisService");
-const { emitToUser } = require("../websockets/socket");
-const coreClient = require("../services/coreClient");
+const { emitToUser } = require('../websockets/socket');
+const coreClient = require('../services/coreClient');
+const { notificarCliente, criarNotificadorWebsocket } = require("../utils/notificadores");
 
 // Limite máximo de corridas na fila antes de considerar congestionamento
-const LIMITE_FILA = 50;
+const LIMITE_FILA = 100;
 
 // Tempo para finalizar a corrida automaticamente
 const TEMPO_FINALIZACAO_MS = 30000;
 
 // Processa automaticamente a próxima corrida da fila local ou da fila de entrada do Core
 async function processarProximaCorridaDaFila(motoristaId) {
+  const client = await pool.connect()
   try {
+    client.query('BEGIN')
     // Primeiro tenta buscar corrida da fila local
     let filaOrigem = "local";
 
-    let proximaFila = await pool.query(
+    let proximaFila = await client.query(
       `SELECT f.id AS fila_id,
               f.corrida_id,
               c.*
@@ -28,7 +31,8 @@ async function processarProximaCorridaDaFila(motoristaId) {
        JOIN corridas c ON c.id = f.corrida_id
        WHERE c.status = 'request'
        ORDER BY f.criado_em ASC
-       LIMIT 1`
+       LIMIT 1
+       FOR UPDATE SKIP LOCKED`
     );
 
     // Se não tiver corrida local, tenta buscar corrida recebida do Core
@@ -43,7 +47,8 @@ async function processarProximaCorridaDaFila(motoristaId) {
          JOIN corridas c ON c.id = f.corrida_id
          WHERE c.status = 'request'
          ORDER BY f.criado_em ASC
-         LIMIT 1`
+         LIMIT 1
+         FOR UPDATE SKIP LOCKED`
       );
     }
 
@@ -55,7 +60,7 @@ async function processarProximaCorridaDaFila(motoristaId) {
          WHERE id = $1`,
         [motoristaId]
       );
-
+      await client.query('COMMIT');
       console.log(`[AUTO] Motorista ${motoristaId} ficou disponível. Nenhuma corrida na fila.`);
       return false;
     }
@@ -63,7 +68,7 @@ async function processarProximaCorridaDaFila(motoristaId) {
     const corrida = proximaFila.rows[0];
 
     // Marca motorista como ocupado novamente
-    await pool.query(
+    await client.query(
       `UPDATE usuarios
        SET disponivel = FALSE
        WHERE id = $1`,
@@ -71,7 +76,7 @@ async function processarProximaCorridaDaFila(motoristaId) {
     );
 
     // Atualiza corrida para match e atribui o motorista
-    const corridaAtualizada = await pool.query(
+    const corridaAtualizada = await client.query(
       `UPDATE corridas
        SET status = 'match',
            motorista_id = $1,
@@ -83,7 +88,7 @@ async function processarProximaCorridaDaFila(motoristaId) {
 
     // Remove a corrida da fila usada
     if (filaOrigem === "local") {
-      await pool.query(
+      await client.query(
         `DELETE FROM fila_corridas
          WHERE id = $1`,
         [corrida.fila_id]
@@ -95,11 +100,13 @@ async function processarProximaCorridaDaFila(motoristaId) {
       );
 
       // Se essa corrida também estava aguardando saída para o Core, remove para evitar duplicidade
-      await pool.query(
+      await client.query(
         `DELETE FROM fila_saida_corridas
          WHERE corrida_id = $1`,
         [corrida.corrida_id]
       );
+
+      await client.query('COMMIT');
 
       await removerDaFilaRedis(
         "rebu:fila:saida",
@@ -108,7 +115,7 @@ async function processarProximaCorridaDaFila(motoristaId) {
     }
 
     if (filaOrigem === "entrada_core") {
-      await pool.query(
+      await client.query(
         `DELETE FROM fila_entrada_corridas
          WHERE id = $1`,
         [corrida.fila_id]
@@ -149,7 +156,16 @@ async function processarProximaCorridaDaFila(motoristaId) {
     // Continua o fluxo automático da corrida
     await automatizarFluxoCorrida(
       corridaAtualizada.rows[0].id,
-      motoristaId
+      motoristaId,
+      {
+        notificadores: [
+          criarNotificadorWebsocket({
+            corridaId: corrida.corrida_id,
+            motoristaId,
+            passageiroId: corrida.passageiro_id
+          })
+        ]
+      }
     );
 
 
@@ -167,6 +183,7 @@ async function processarProximaCorridaDaFila(motoristaId) {
     return true;
 
   } catch (erro) {
+    await client.query('ROLLBACK');
     console.error(`[AUTO] Erro ao processar próxima corrida da fila: ${erro.message}`);
 
     await pool.query(
@@ -177,22 +194,27 @@ async function processarProximaCorridaDaFila(motoristaId) {
     );
 
     return false;
+  } finally {
+    client.release();
   }
 }
 
 // Automatiza o fluxo da corrida quando há motorista disponível
-async function automatizarFluxoCorrida(corridaId, motoristaId) {
+async function automatizarFluxoCorrida(corridaId, motoristaId, opcoes = {}) {
+  const { notificadores = [] } = opcoes;
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     // Match -> Confirm
-    await pool.query(
+    await client.query(
       `UPDATE corridas
        SET status = 'confirm',
            atualizado_em = CURRENT_TIMESTAMP
        WHERE id = $1 AND status = 'match'`,
       [corridaId]
     );
+    await notificarCliente(notificadores, "confirm");
 
     await registrarEvento(
       corridaId,
@@ -205,7 +227,7 @@ async function automatizarFluxoCorrida(corridaId, motoristaId) {
     );
 
     // Confirm -> In Transit
-    await pool.query(
+    await client.query(
       `UPDATE corridas
        SET status = 'in_transit',
            atualizado_em = CURRENT_TIMESTAMP
@@ -223,10 +245,12 @@ async function automatizarFluxoCorrida(corridaId, motoristaId) {
       }
     );
 
+    await notificarCliente(notificadores, "in_transit")
+
     // Finaliza automaticamente depois do tempo configurado
     setTimeout(async () => {
       try {
-        const corridaFinalizada = await pool.query(
+        const corridaFinalizada = await client.query(
           `UPDATE corridas
            SET status = 'complete',
                atualizado_em = CURRENT_TIMESTAMP
@@ -249,6 +273,7 @@ async function automatizarFluxoCorrida(corridaId, motoristaId) {
             automatico: true
           }
         );
+        await notificarCliente(notificadores, "complete")
 
         console.log(`[AUTO] Corrida ${corridaId} finalizada automaticamente.`);
 
@@ -449,13 +474,20 @@ async function solicitarCorrida(req, res) {
         rota: rotaCoordenadas
       });
     }
+    const client = await pool.connect();
 
     // Busca um motorista disponível para atender a corrida
-    const motoristaDisponivel = await selecionarEAtribuirMotorista(client);
+    let motorista 
+    try {
+      motorista  = await selecionarEAtribuirMotorista(client);
+    } catch(err){}
+    finally {
+      client.release();
+    }
 
     // Se existir motorista disponível, a corrida vai para o estado match
-    if (motoristaDisponivel.rows.length > 0) {
-      const motoristaId = motoristaDisponivel.rows[0].id;
+    if (motorista) {
+      const motoristaId = motorista.id;
 
       // Marca o motorista como ocupado
       await pool.query(
@@ -508,7 +540,16 @@ async function solicitarCorrida(req, res) {
       // Confirma, inicia e finaliza automaticamente
       await automatizarFluxoCorrida(
         corrida.rows[0].id,
-        motoristaId
+        motoristaId,
+        {
+          notificadores: [
+            criarNotificadorWebsocket({
+              corridaId: corrida.rows[0].id,
+              motoristaId,
+              passageiroId: passageiro_id
+            })
+          ]
+        }
       );
 
       emitToUser(motoristaId, 'trip_state_changed', {
@@ -957,5 +998,8 @@ module.exports = {
   listarFilaEntrada,
   listarFilaSaida,
   reprocessarFila,
-  atualizarStatusMotorista
+  atualizarStatusMotorista,
+  processarProximaCorridaDaFila,
+  automatizarFluxoCorrida,
+  selecionarEAtribuirMotorista
 };
