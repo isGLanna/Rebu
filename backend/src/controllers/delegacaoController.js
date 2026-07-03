@@ -1,6 +1,8 @@
 const pool = require("../config/db");
 const { registrarEvento } = require("../utils/auditLogger");
 const coreClient = require("../services/coreClient");
+const { selecionarEAtribuirMotorista, automatizarFluxoCorrida } = require("../controllers/corridaController");
+const { criarNotificadorCore, criarNotificadorWebsocket, notificarCliente } = require("../utils/notificadores");
 
 /**
  * Recebe uma corrida delegada pelo Core.
@@ -139,6 +141,15 @@ async function receberCorridaDelegada(req, res) {
           fonte: "delegacao_entrada"
         }
       );
+
+      const notificadores = [
+        criarNotificadorWebsocket({ corridaId: corridaLocal.id, motoristaId: motoristaId, passageiroId: passageiroId })
+      ];
+
+      if (auctionId || origemServiceId === "CORE") {
+        notificadores.push(criarNotificadorCore(corridaLocal.id));
+      }
+      await notificarCliente(notificadores, "match");
 
       // Envia proposta de volta ao Core (temos motorista disponível)
       if (auctionId) {

@@ -2,6 +2,8 @@ const pool = require("../config/db");
 const { registrarEvento } = require("../utils/auditLogger");
 const { tick } = require("../utils/lamportClock");
 const coreClient = require("../services/coreClient");
+const { selecionarEAtribuirMotorista, automatizarFluxoCorrida } = require("./corridaController");
+const { criarNotificadorCore, criarNotificadorWebsocket, notificarCliente } = require("../utils/notificadores");
 
 // ---------------------------------------------------------------------------
 // Webhook 1: POST /rides/incoming
@@ -139,7 +141,8 @@ async function receberAtribuicao(req, res) {
       } else {
         await pool.query(`
           INSERT INTO usuarios (id, nome, tipo)
-          VALUES($1, $2, $3),`
+          VALUES($1, $2, $3)
+          ON CONFLICT (id) DO NOTHING`,
         [passengerId, passengerName, 'passageiro']);           // <<<----- Verificar se não precisa em algum lugar criar um motorista para inserir o id dele
         // Insere a corrida delegada no banco local
         const inserida = await pool.query(
@@ -206,32 +209,21 @@ async function receberAtribuicao(req, res) {
         { estadoAnterior: "request", estadoNovo: "match", motoristaId }
       );
 
+      const notificadores = [
+        criarNotificadorCore(rideUuid),
+        criarNotificadorWebsocket({ corridaId: rideUuid, motoristaId: motoristaId, passageiroId: passengerId })
+      ];
+
+      await notificarCliente(notificadores, "match");
+
       // Renova o lock no Core (já temos o lock, aqui confirmamos/renovamos o TTL)
       try {
         await coreClient.adquirirLock(rideUuid, 60);
       } catch (erroLock) {
         console.warn(`[leilaoController] Falha ao renovar lock ${rideUuid}:`, erroLock.message);
       }
-
-      // Transita para "confirm" no Core (requer lock)
-      try {
-        await coreClient.atualizarStatusNoCore(rideUuid, "confirm");
-
-        await pool.query(
-          `UPDATE corridas SET status = 'confirm', atualizado_em = CURRENT_TIMESTAMP WHERE id = $1`,
-          [rideUuid]
-        );
-
-        await registrarEvento(
-          rideUuid,
-          "ride_confirm",
-          { estadoAnterior: "match", estadoNovo: "confirm" }
-        );
-
-        console.log(`[leilaoController] Corrida ${rideUuid} confirmada com sucesso.`);
-      } catch (erroCore) {
-        console.error(`[leilaoController] Falha ao confirmar corrida ${rideUuid} no Core:`, erroCore.message);
-      }
+      
+      await automatizarFluxoCorrida(rideUuid, motoristaId, { notificadores });
 
     } catch (erro) {
       console.error(`[leilaoController] Erro ao processar atribuição ${rideUuid}:`, erro);

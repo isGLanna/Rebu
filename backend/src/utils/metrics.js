@@ -1,4 +1,4 @@
-const { Registry, Counter, collectDefaultMetrics, Gauge } = require('prom-client');
+const { Registry, Counter, collectDefaultMetrics } = require('prom-client');
 
 const register = new Registry();
 
