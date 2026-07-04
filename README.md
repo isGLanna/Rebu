@@ -1,34 +1,21 @@
 # Orientações de Execução
 
-Esse projeto segue uma linha de desenvolvimento com frontend baseado em react-native e o backend em Node.js. Este README está dividido em 3 seções principais. A primeira seção trata de como preparar o ambiente com as variáveis de ambiente utilizadas neste projeto. A seção seguinte define quais são os métodos para executar corretamente o projeto. A terceira seção detalha as ferramentas utilizadas neste projeto para adequar aos princípios de Sistemas Distribuídos foram implementados. Caso deseje executar o projeto em instâncias kubernetes, utilize a sequencia de scripts presentes em infra/scripts (mobile não está incluso).
-
-O processo pode ser demorado, portanto, foi configurado um script para executar um ou mais comandos de vez.
-
-   ```bash
-    ./main.sh
-   ```
+Esse projeto segue uma linha de desenvolvimento com frontend baseado em react-native e o backend em Node.js. Este README está dividido em 3 seções principais. A primeira seção trata de como preparar o ambiente com as variáveis de ambiente utilizadas neste projeto. A seção seguinte define quais são os métodos para executar corretamente o projeto. A terceira seção detalha as ferramentas e mecanismos utilizadas neste projeto para adequar aos princípios de Sistemas Distribuídos que foram implementados. Caso deseje executar o projeto em instâncias kubernetes, utilize a sequencia de scripts presentes em infra/scripts na segunda seção (mobile não está incluso).
 
 ## Seção 1: Instalando Dependências
 
-Todas as variáveis de ambiente para o backend estão explicitas no docker-compose, quanto ao frontend, será necessário incluir um arquivo .env contendo a chave pública para acessar o mapa listado abaixo junto ao scripts de instalação das dependências:
+Todas as variáveis de ambiente para o backend estão explicitas no docker-compose e exemplo.env, quanto ao frontend, será necessário incluir um arquivo .env contendo a chave pública para acessar o mapa listado abaixo junto ao scripts de instalação das dependências, além de alterar os IPs contidos em:
+   - backend/src/services/coreClient.js (IP do Core)
+   - mobile/src/config/base-url.ts (IP do serviço)
+   - backend/docker-compose.yaml em CORE_URL e SERVICE_URL (IP do Core e IP do serviço)
 
 EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN='pk.eyJ1IjoiZ2lvcmRhbm9sYW5uYSIsImEiOiJjbW8wdDV2NTcwYzlwMnhveTVja3htdTRzIn0.hNzDdxjqav0FBkeRIsag0w'
 
-   ```bash
-    ./create.sh
-   ```
-
-   ou
+Se desejar visualizar o desenvolvimento das interfaces mobile, garanta que seu dispositivo esteja no modo desenvolvedor e ativar a depuração por wifi. Além disso, ambos dispositivos devem estar conectados na mesma rede e pareados: configure o ip do seu dispositivo celular em Rebu/Mobile/connect_devices.sh, após isso, execute o seguinte código abaixo inserindo, respectivamente, porta virtual, código de segurança e porta real.
 
    ```bash
-    cd backend
-    docker compose up
-
-    cd ../mobile
-    npx expo run:(android/ios)
+      ./connect_devices.sh
    ```
-
-Devido a conflitos de versões por várias ferramentas (jdk, android_sdk, node) e configuração de variáveis de ambiente, não serpa garantido o funcionamento do docker para o frontend.
 
 ## Seção 2: Executar projeto
 
@@ -42,44 +29,27 @@ No diretório do Backend execute para subir o container:
     docker compose up
   ```
 
-### Frontend - Web
-
-No diretório do Frontend execute:
-
-  ```bash
-    npx expo start --web
-  ```
-
-  ou
-
-  ```bash
-    npx expo start
-    w
-  ```
-
 ### Frontend - Mobile
 
-Desbloqueie o modo de desenvolvimento no celular e permita a depuração por USB ou Wifi. Para conexão por Wifi, pareie os dois dispositivos:
+Desbloqueado o modo de desenvolvimento no celular e permitida a depuração por USB ou Wifi, crie as instâncias do container no docker executando o código:
 
--Selecione depuração por Wifi e use "Parear o dispositivo com um código de pareamento
--Use o endereço IP e porta no código abaixo para criar uma conexão confiável:
-
-  ```bash
-    adb pair IP:PORTA
-  ```
-
--Insira o código
--Faça a conexão com o IP e portas real do dispositivo (Endereço IP e Porta):
-
-  ```bash
-    adb connect IP:PORTA
-  ```
-
- Após isso, execute o comando ajustando COMMAND dentro de docker-compose.yaml para o seu sistema operacional (android/ios). Ao finalizar, abrirá o aplicativo automaticamente, caso não apareça, aperte 'a' ou 'i' para executar os comandos do Expo abrir em android ou ios.
-
-  ```bash
+   ```bash
+    cd backend
     docker compose up
-  ```
+
+    cd ../mobile
+    docker compose up      // Tenha paciência, vai demorar
+   ```
+
+   ou
+
+   ```bash
+    ./create.sh
+   ```
+
+Observação: ajuste o COMMAND dentro de docker-compose.yaml para o seu sistema operacional (android/ios). Ao finalizar, abrirá o aplicativo automaticamente, caso não apareça, aperte 'a' ou 'i' no terminal para executar os comandos do Expo abrir em android ou ios.
+
+A fins de testes, é recomendada a inserção de usuários fictícios para atender às corridas, e portanto, execute o comando backend/popular_db.sh.
 
 ## Seção 3:
 
